@@ -17,11 +17,6 @@ function Header() {
 
   return (
     <header className="header">
-      <div className="logo">
-        <Link to="/">
-          <img className="logo" width={120} src="/images/logo.png" alt="" />
-        </Link>
-      </div>
       <ul>
         {user ? (
           <li>

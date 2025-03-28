@@ -4,19 +4,13 @@ import Navigation from "../../components/Navigation/Navigation";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import SettingsIcon from "@mui/icons-material/Settings";
-import SummarizeIcon from "@mui/icons-material/Summarize";
-import AccountBox from "@mui/icons-material/AccountBox";
-import BackupTableIcon from "@mui/icons-material/BackupTable";
 import { FaPaperPlane } from "react-icons/fa";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import { FaEye, FaSearch } from "react-icons/fa";
 import CallToActionIcon from "@mui/icons-material/CallToAction";
 import DoneIcon from "@mui/icons-material/Done";
 import VisibilityIcon from "@mui/icons-material/Visibility";
-import { useSelector, useDispatch } from "react-redux";
-import { useEffect } from "react";
-import { Icon } from "@iconify/react";
-import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 const useStyles = makeStyles((theme) => ({
   icon: {
@@ -28,11 +22,8 @@ export default function Nav({ main }) {
   //------------------ATTRIBUTES/VARIABLES------------------
 
   const classes = useStyles();
-  const dispatch = useDispatch();
 
   const { user } = useSelector((state) => state.auth);
-
-  const navigate = useNavigate();
 
   // --------------------------useEffects----------------------------
 
@@ -72,24 +63,6 @@ export default function Nav({ main }) {
         <SettingsIcon className={classes.icon} />,
         <ExitToAppIcon className={classes.icon} />,
       ];
-
-      link.notifications = [
-        "Review & Classify",
-        "Root Cause Analysis",
-        "Improvement Action",
-        "Improvement Action Verification",
-        "Finalize",
-        "Re-review",
-      ];
-
-      link.notificationsLink = [
-        "/dashboard/cias/owned/review-and-classify",
-        "/dashboard/cias/owned/root-cause-analysis",
-        "/dashboard/cias/owned/improvement-action",
-        "/dashboard/cias/owned/improvement-action-verification",
-        "/dashboard/cias/owned/finalize",
-        "/dashboard/cias/owned/review",
-      ];
     } //----------------------------------------------------------------------------------------------------------
     else if (user.roles.includes("qm")) {
       link.name = ["Dashboard", "Settings", "Logout"];
@@ -100,26 +73,6 @@ export default function Nav({ main }) {
         <DashboardIcon className={classes.icon} />,
         <SettingsIcon className={classes.icon} />,
         <ExitToAppIcon className={classes.icon} />,
-      ];
-
-      link.notifications = [
-        "Assign",
-        "Review & Classify",
-        "Root Cause Analysis",
-        "Improvement Action",
-        "Improvement Action Verification",
-        "Finalize",
-        "Re-review",
-      ];
-
-      link.notificationsLink = [
-        "/dashboard/cias/assign",
-        "/dashboard/cias/owned/review-and-classify",
-        "/dashboard/cias/owned/root-cause-analysis",
-        "/dashboard/cias/owned/improvement-action",
-        "/dashboard/cias/owned/improvement-action-verification",
-        "/dashboard/cias/owned/finalize",
-        "/dashboard/cias/owned/review",
       ];
 
       link.notificationsIcon = [

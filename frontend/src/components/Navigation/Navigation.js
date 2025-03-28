@@ -15,7 +15,7 @@ import List from "@mui/material/List";
 import MenuIcon from "@mui/icons-material/Menu";
 import { Link as MuiLink, useNavigate } from "react-router-dom";
 
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { useEffect } from "react";
 import Menu from "@mui/material/Menu";
 import Typography from "@mui/material/Typography";
@@ -117,8 +117,6 @@ export default function Navigation(props) {
     notifications: [],
     notificationsLink: [],
     notificationsIcon: [],
-    avatar:
-      "https://media.istockphoto.com/photos/businessman-silhouette-as-avatar-or-default-profile-picture-picture-id476085198?b=1&k=20&m=476085198&s=612x612&w=0&h=Ov2YWXw93vRJNKFtkoFjnVzjy_22VcLLXZIcAO25As4=",
     ...props.content,
   };
 
@@ -181,12 +179,6 @@ export default function Navigation(props) {
           >
             {brand}
           </Link>
-
-          {/* <IconButton color="inherit" className={classes.profile}>
-                        <Badge badgeContent={0} color="secondary">
-                            <NotificationsIcon />
-                        </Badge>
-                    </IconButton> */}
 
           <Box sx={{ flexGrow: 0 }}>
             <Tooltip title="Open settings">
@@ -285,7 +277,6 @@ export default function Navigation(props) {
               <React.Fragment key={length}>{component}</React.Fragment>
             ))}
           </div>
-          {/* <Chatbox /> */}
         </main>
       </Grid>
     </div>
