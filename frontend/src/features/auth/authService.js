@@ -29,23 +29,6 @@ const logout = () => {
   localStorage.removeItem("user");
 };
 
-// Delete user
-// const deleteUser = async (userId, token) => {
-//   const config = {
-//     headers: {
-//       Authorization: `Bearer ${token}`,
-//     },
-//   }
-
-//   const response = await axios.delete(API_URL + userId, config)
-
-//   localStorage.removeItem('user')
-
-//   window.location.reload();
-
-//   return response.data
-// }
-
 //-----------------------------------------------------------------------------------
 //--------------------------------------GETTERS----------------------------------
 //-----------------------------------------------------------------------------------

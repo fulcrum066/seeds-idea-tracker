@@ -9,10 +9,6 @@ export default function HomePage({}) {
 
   const { user } = useSelector((state) => state.auth);
 
-  //------------------FUNCTIONS------------------
-
-  //------------
-
   function getHomePage() {
     if (user.roles.includes("pending")) {
       return <UpdateAccountPrivileges />;

@@ -14,6 +14,7 @@ import Forbidden from "./components/Authenticate/AccessDenied";
 import HomePage from "./pages/home/HomePage";
 //pages
 import SeedsHome from "./pages/seeds/SeedsHome";
+import Nav from "./pages/navigation/Nav";
 
 const ROLES = {
   employee: "employee",
@@ -33,7 +34,7 @@ function App() {
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          {/* <Route path="unauthorised" element={<Unauthorised />} /> */}
+          <Route path="unauthorised" element={<Unauthorised />} />
           <Route path="/logout" element={<Logout />} />
           <Route path="*" element={<PageNotFound />} />
         </Route>
@@ -49,6 +50,7 @@ function App() {
                 ROLES.qm,
                 ROLES.pending,
                 ROLES.salesTeam,
+                ROLES.admin,
               ]}
             />
           }
@@ -56,6 +58,10 @@ function App() {
           <Route path="dashboard" element={<HomePage />} />
           <Route path="*" element={<PageNotFound />} />
           <Route path="/forbidden" element={<Forbidden />} />
+          <Route
+            path="/dashboard/seed/"
+            element={<Nav main={[<SeedsHome />]} />}
+          />
         </Route>
       </Routes>
     </>
