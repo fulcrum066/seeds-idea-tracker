@@ -63,62 +63,12 @@ export default function Nav({ main }) {
 
     //----------------------------------------------------------------------------------------------------------
     if (user.roles.includes("employee")) {
-      link.name = [
-        "Dashboard",
-        "CIAs",
-        "F6",
-        "Sales Management",
-        "Projects",
-        "Reporting",
-        "Business Calendar",
-        "Catalogue",
-        "Visitor Management",
-        "Settings",
-        "Logout",
-      ];
+      link.name = ["Dashboard", "Settings", "Logout"];
 
-      link.route = [
-        "/dashboard",
-        "/dashboard/cia-dashboard",
-        "/dashboard/sap",
-        "/dashboard/sales-management",
-        "/dashboard/projects",
-        "/dashboard/reporting",
-        "/dashboard/business-calendar",
-        "/dashboard/catalogue",
-        "/dashboard/visitors-dashboard",
-        "/dashboard/settings",
-        "/logout",
-      ];
+      link.route = ["/dashboard", "/dashboard/settings", "/logout"];
 
       link.icon = [
         <DashboardIcon className={classes.icon} />,
-        <SummarizeIcon className={classes.icon} />,
-        // <ManageSearchIcon className={classes.icon} />,
-        // <Icon
-        //   icon="game-icons:archive-register"
-        //   className={`${classes.icon} text-2xl`}
-        // />,
-        <Icon icon="cib:sap" className={`${classes.icon} text-3xl`} />,
-        <Icon
-          icon="material-symbols:point-of-sale-sharp"
-          className={`${classes.icon} text-3xl`}
-        />,
-        <Icon
-          icon="carbon:report-data"
-          className={`${classes.icon} text-2xl`}
-        />,
-        <Icon
-          icon="material-symbols:task"
-          className={`${classes.icon} text-2xl`}
-        />,
-        <Icon
-          icon="material-symbols:calendar-add-on-sharp"
-          className={`${classes.icon} text-2xl`}
-        />,
-        <BackupTableIcon className={classes.icon} />,
-        <AccountBox className={classes.icon} />,
-
         <SettingsIcon className={classes.icon} />,
         <ExitToAppIcon className={classes.icon} />,
       ];
@@ -142,61 +92,12 @@ export default function Nav({ main }) {
       ];
     } //----------------------------------------------------------------------------------------------------------
     else if (user.roles.includes("qm")) {
-      link.name = [
-        "Dashboard",
-        "CIAs",
-        "F6",
-        "Sales Management",
-        "Projects",
-        "Reporting",
-        "Business Calendar",
-        "Catalogue",
-        "Visitor Management",
-        "Settings",
-        "Logout",
-      ];
+      link.name = ["Dashboard", "Settings", "Logout"];
 
-      link.route = [
-        "/dashboard",
-        "/dashboard/cia-dashboard",
-        "/dashboard/sap",
-        "/dashboard/sales-management",
-        "/dashboard/projects",
-        "/dashboard/reporting",
-        "/dashboard/business-calendar",
-        "/dashboard/catalogue",
-        "/dashboard/visitors-dashboard",
-        "/dashboard/settings",
-        "/logout",
-      ];
+      link.route = ["/dashboard", "/dashboard/settings", "/logout"];
 
       link.icon = [
         <DashboardIcon className={classes.icon} />,
-        <SummarizeIcon className={classes.icon} />,
-        // <ManageSearchIcon className={classes.icon} />,
-        // <Icon
-        //   icon="game-icons:archive-register"
-        //   className={`${classes.icon} text-2xl`}
-        // />,
-        <Icon icon="cib:sap" className={`${classes.icon} text-3xl`} />,
-        <Icon
-          icon="material-symbols:point-of-sale-sharp"
-          className={`${classes.icon} text-3xl`}
-        />,
-        <Icon
-          icon="carbon:report-data"
-          className={`${classes.icon} text-2xl`}
-        />,
-        <Icon
-          icon="material-symbols:task"
-          className={`${classes.icon} text-2xl`}
-        />,
-        <Icon
-          icon="material-symbols:calendar-add-on-sharp"
-          className={`${classes.icon} text-2xl`}
-        />,
-        <BackupTableIcon className={classes.icon} />,
-        <AccountBox className={classes.icon} />,
         <SettingsIcon className={classes.icon} />,
         <ExitToAppIcon className={classes.icon} />,
       ];
