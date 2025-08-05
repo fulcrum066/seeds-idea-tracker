@@ -42,6 +42,8 @@ function App() {
 
         {/* -------------------Multiple Routes everyone------------------- */}
 
+        <Route path="/forbidden" element={<Forbidden />} />
+
         <Route
           element={
             <RequireAuth
@@ -51,18 +53,20 @@ function App() {
                 ROLES.pending,
                 ROLES.salesTeam,
                 ROLES.admin,
+                "User",
+                "Admin"
               ]}
             />
           }
         >
           <Route path="dashboard" element={<HomePage />} />
           <Route path="*" element={<PageNotFound />} />
-          <Route path="/forbidden" element={<Forbidden />} />
           <Route
             path="/dashboard/seed/"
             element={<Nav main={[<SeedsHome />]} />}
           />
         </Route>
+
       </Routes>
     </>
   );
