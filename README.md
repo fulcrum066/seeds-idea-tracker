@@ -21,4 +21,4 @@ Micromax's idea tracking platform for capturing, evaluating, and prioritizing in
 5. Run the application
    - Frontend: `yarn start`
    - Backend: `yarn dev` 
-6. Use the email 'admin@gmail.com' and password 'a'
+6. Use the email 'admin@gmail.com' and password 'a' in the sign in page
