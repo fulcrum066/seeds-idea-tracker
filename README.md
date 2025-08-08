@@ -14,26 +14,11 @@ Micromax's idea tracking platform for capturing, evaluating, and prioritizing in
    - `cd frontend && yarn install`
    - `cd backend && yarn install`
 3. Set up environment variables
-4. Run the application
+   - create a .env file in the backend directory
+   - copy and paste the code below into the .env file
+   `MONGO_URI=mongodb+srv://jackmccreery:dncqyG6zYSsdBk1M@seed-cluster-0.l6z0wf1.mongodb.net/?retryWrites=true&w=majority&appName=seed-cluster-0`
+   `JWT_SECRET=my$up3rS3cretKey!2025`
+5. Run the application
    - Frontend: `yarn start`
-   - Backend: `yarn dev`
-
-## Project Requirements
-- Analyze and document existing React/Node.js codebase
-- Create data model for capturing idea information
-- Develop structured review system for idea evaluation
-- Build visual dashboards showing innovation metrics
-  - Average implementation time
-  - List of opportunities by priority
-  - Estimated timelines for active projects
-
-## Key Features
-- Idea submission and tracking
-- Quantifiable innovation metrics
-- Comprehensive project prioritization system
-
-## Development Guidelines
-- Follow MERN stack best practices
-- Maintain clean, documented code
-- Conduct regular code reviews
-- Prioritize user experience and system performance
+   - Backend: `yarn dev` 
+6. Use the email 'admin@gmail.com' and password 'a'
