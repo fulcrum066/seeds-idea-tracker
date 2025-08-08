@@ -16,8 +16,8 @@ Micromax's idea tracking platform for capturing, evaluating, and prioritizing in
 3. Set up environment variables
    - create a .env file in the backend directory
    - copy and paste the code below into the .env file
-   `MONGO_URI=mongodb+srv://jackmccreery:dncqyG6zYSsdBk1M@seed-cluster-0.l6z0wf1.mongodb.net/?retryWrites=true&w=majority&appName=seed-cluster-0`
-   `JWT_SECRET=my$up3rS3cretKey!2025`
+   - `MONGO_URI=mongodb+srv://jackmccreery:dncqyG6zYSsdBk1M@seed-cluster-0.l6z0wf1.mongodb.net/?retryWrites=true&w=majority&appName=seed-cluster-0`
+   - `JWT_SECRET=my$up3rS3cretKey!2025`
 5. Run the application
    - Frontend: `yarn start`
    - Backend: `yarn dev` 
