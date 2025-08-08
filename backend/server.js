@@ -1,19 +1,19 @@
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, ".env") }); // Load env immediately
+
 const express = require("express");
 const colors = require("colors");
 const { errorHandler } = require("./middleware/errorMiddleware");
 const connectDB = require("./config/db");
 const cors = require("cors");
-const dotenv = require("dotenv");
-const path = require("path");
 
-dotenv.config();
-
+// Port from .env or default to 5000
 const port = process.env.PORT || 5000;
 
 // Initialize express
 const app = express();
 
-// Connect to database
+// Connect to MongoDB
 connectDB();
 
 // Middleware
@@ -25,7 +25,7 @@ app.use(cors());
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/seeds", require("./routes/seedRoutes"));
 
-// Serve frontend
+// Serve frontend in production
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/build")));
 
@@ -39,4 +39,5 @@ if (process.env.NODE_ENV === "production") {
 // Error handler
 app.use(errorHandler);
 
+// Start server
 app.listen(port, () => console.log(`Server started on port ${port}`));

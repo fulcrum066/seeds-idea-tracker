@@ -2,49 +2,15 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const asyncHandler = require("express-async-handler");
 const User = require("../models/userModel");
+const UserFactory = require("../factory/userFactory"); // ✅ Added this line
 
 // @desc    Register new user
 // @route   POST /api/users
 // @access  Public
 const registerUser = asyncHandler(async (req, res) => {
-  const { firstName, lastName, email, password, roles } = req.body;
-  console.log("Register user", req.body);
+  try {
+    const user = await UserFactory.createUser(req.body);
 
-  if (!firstName || !lastName || !email || !password) {
-    res.status(400);
-    throw new Error("Please add all fields");
-  }
-
-  // Check if user exists
-  const userExists = await User.findOne({ email });
-
-  if (userExists) {
-    res.status(400);
-    throw new Error("User already exists");
-  }
-
-  // Hash password
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
-
-  // Check if the User model is empty
-  const isFirstUser = (await User.countDocuments()) === 0;
-
-  // Set roles based on whether this is the first user
-  let r = isFirstUser ? ["admin"] : ["pending"];
-
-  // Create user
-  const user = await User.create({
-    firstName,
-    lastName,
-    email,
-    password: hashedPassword,
-    roles: r,
-    exec: "no",
-    supervisor: null,
-  });
-
-  if (user) {
     res.status(201).json({
       _id: user.id,
       firstName: user.firstName,
@@ -53,9 +19,9 @@ const registerUser = asyncHandler(async (req, res) => {
       roles: user.roles,
       token: generateToken(user._id),
     });
-  } else {
+  } catch (err) {
     res.status(400);
-    throw new Error("Invalid user data");
+    throw new Error(err.message);
   }
 });
 
@@ -99,29 +65,12 @@ const generateToken = (id) => {
   });
 };
 
-// // @desc    Delete user
-// // @route   DELETE /api/users/:id
-// // @access  Private
-// const deleteUser = asyncHandler(async (req, res) => {
-//   const user = await User.findById(req.params.id)
-
-//   // Check for user
-//   if (!req.user) {
-//     res.status(401)
-//     throw new Error('User not found')
-//   }
-
-//   await user.remove()
-
-//   res.status(200).json({ id: req.params.id })
-// })
-
 //-----------------------------------------------------------------------------------
 //--------------------------------------GETTERS----------------------------------
 //-----------------------------------------------------------------------------------
 
 const getUser = asyncHandler(async (req, res) => {
-  const user = await User.find({}); //user: req.user.id
+  const user = await User.find({});
   res.status(200).json(user);
 });
 
@@ -137,17 +86,10 @@ const updateUser = asyncHandler(async (req, res) => {
     throw new Error("User not found");
   }
 
-  // Check for user
   if (!req.user) {
     res.status(401);
     throw new Error("User not found");
   }
-
-  // Make sure the logged in user matches the user user
-  //  if (user.user.toString() !== req.user.id) {
-  //    res.status(401)
-  //    throw new Error('User not authorized')
-  //  }
 
   const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
@@ -168,7 +110,6 @@ const deleteUser = asyncHandler(async (req, res) => {
     throw new Error("User not found");
   }
 
-  // Check for user
   if (!req.user) {
     res.status(401);
     throw new Error("User not found");
@@ -220,7 +161,6 @@ const updateUserOne = asyncHandler(async (req, res) => {
     throw new Error("UserOne not found");
   }
 
-  // Check for user
   if (!req.user) {
     res.status(401);
     throw new Error("User not found");
@@ -231,7 +171,6 @@ const updateUserOne = asyncHandler(async (req, res) => {
   if (pw == "") {
     password = userOne.password;
   } else {
-    // Hash password
     const salt = await bcrypt.genSalt(10);
     password = await bcrypt.hash(pw, salt);
   }
@@ -241,8 +180,6 @@ const updateUserOne = asyncHandler(async (req, res) => {
   const updatedUserOne = await User.findByIdAndUpdate(_id, combined, {
     new: true,
   });
-
-  // Check for user email
 
   if (updatedUserOne) {
     res.json({
@@ -285,30 +222,25 @@ const manageUserOne = asyncHandler(async (req, res) => {
     throw new Error("UserOne not found");
   }
 
-  // Check for user
   if (!req.user) {
     res.status(401);
     throw new Error("User not found");
   }
 
-  // Remove unwanted roles
   var roles = rolesBeforeFilter.filter(
     (role) => !removedRole.includes(role) && role !== ""
   );
 
   const isPhoneNumberEmpty = !phoneNumber || phoneNumber.trim() === "";
 
-  // Create the new company role object
   const newCompanyRole = { ref, role: companyRole, managementLevel };
 
   const user1 = userOne;
 
-  // Filter out the existing companyRole if it matches
   const updatedCompanyRoles = user1.companyRoles.filter(
     (cr) => cr.role !== companyRole
   );
 
-  // Add the new companyRole object if companyRole is provided
   if (companyRole) {
     updatedCompanyRoles.push(newCompanyRole);
   }
@@ -318,14 +250,12 @@ const manageUserOne = asyncHandler(async (req, res) => {
     roles,
     exec,
     supervisor,
-    ...(isPhoneNumberEmpty ? {} : { phoneNumber }), // Include phoneNumber only if it's not empty
-    companyRoles: updatedCompanyRoles, // Updated field to companyRoles
+    ...(isPhoneNumberEmpty ? {} : { phoneNumber }),
+    companyRoles: updatedCompanyRoles,
   };
 
-  // Check if the roles array has changed
   const rolesChanged = JSON.stringify(user1.roles) !== JSON.stringify(roles);
 
-  // Update the user only if roles have changed
   if (rolesChanged) {
     const updatedUserOne = await User.findByIdAndUpdate(_id, combined, {
       new: true,
@@ -338,7 +268,7 @@ const manageUserOne = asyncHandler(async (req, res) => {
       throw new Error("Invalid credentials");
     }
   } else {
-    res.status(200).json(user1); // Return the current user without updating
+    res.status(200).json(user1);
   }
 });
 
