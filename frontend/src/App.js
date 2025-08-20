@@ -63,7 +63,7 @@ function App() {
           <Route path="*" element={<PageNotFound />} />
           <Route
             path="/dashboard/seed/"
-            element={<Nav main={[<SeedsHome />]} />}
+            element={<SeedsHome />}
           />
         </Route>
 
