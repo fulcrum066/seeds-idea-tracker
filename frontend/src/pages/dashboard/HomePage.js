@@ -1,20 +1,7 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { Link } from 'react-router-dom';
-import { Route } from 'react-router-dom';
-import SeedsHome from "../seeds/SeedsHome";
+import { Link } from "react-router-dom";
 
-import '../HomePageStyle.css'
+import './HomePageStyle.css'
 import TopBar from '../../components/Navigation/NavBar';
-
-
-function Routes(){
-  return(
-    <Routes>
-        <Route path="../seeds/SeedsHome" element={<SeedsHome/>} />
-  </Routes>
-  )
-}
 
 function Background() {
   return (
@@ -34,10 +21,12 @@ function Background() {
 function ProjectBoards(){
   return(
     <div style={{marginTop: '100px'}}>
-      <Link to="../seeds/SeedsHome" className='project-boards-buttons' id='button-drafts' style={{ textDecoration: 'none' }}>
+      <Link to="[PLACEHOLDER]" className='project-boards-buttons' id='button-drafts' style={{ textDecoration: 'none' }}>
         <h1>Drafts</h1>
       </Link>
-      <button className='project-boards-buttons' id='button-add'><img src='dashboard_images/add.png'style={{ width: '35px', height:'30px', marginRight: '5px'}}/>Join New Project</button>
+      <Link to="[PLACEHOLDER]" className='project-boards-buttons' id='button-add'><img src='dashboard_images/add.png'style={{ width: '35px', height:'30px', marginRight: '5px'}}/>
+        Join New Project
+      </Link>
       <h1 style={{paddingLeft: '50px', marginTop: '25px'}}>Projects: </h1>
       <table className='project-boards'>
         <tr>
@@ -71,34 +60,16 @@ function RecentSeeds(){
   )
 }
 
-function YourSeedIdeas(){
-  return(
-    <div style={{paddingLeft: '50px', marginTop: '50px'}}>
-      <h1 style = {{ fontFamily: 'B612, sans-serif' }}>Your Seed Ideas: </h1>
-      <div style={{ height: '200px', overflowY: 'auto' }}>
-        <table border = "0" style={{backgroundColor: 'white'}}>
-          <tr>
-            <td style = {{textAlign: 'left', backgroundColor: 'white', color: 'Black', fontSize: '25px'}}>Idea 1</td>
-          </tr>
-          <tr>
-            <td style = {{textAlign: 'left', backgroundColor: 'white', color: 'grey'}}>Description</td>
-          </tr>
-        </table>
-      </div>
-    </div>
-  )
-}
 
-
-function UserHomePage(){
+function UserHomePage() {
   return (
     <>
-      <Background/>
+      <Background />
       <TopBar />
-      <ProjectBoards/>
-      <RecentSeeds/>
+      <ProjectBoards />
+      <RecentSeeds />
     </>
-    );  
+  );
 }
 
 export default UserHomePage;

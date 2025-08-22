@@ -38,6 +38,7 @@ function App() {
           <Route path="unauthorised" element={<Unauthorised />} />
           <Route path="/logout" element={<Logout />} />
           <Route path="*" element={<PageNotFound />} />
+          <Route path="/userHomepage" element={<UserHomePage/>} />
         </Route>
         {/* -----------------------------------Authenticated Routes----------------------------------- */}
 
