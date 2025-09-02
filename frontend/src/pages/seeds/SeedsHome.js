@@ -109,9 +109,14 @@ function SeedsDashboard() {
           creator: seed.creatorEmail,
           priority: seed.priority,
           // Metric stuff, will be changed when proper metrics are sorted out
-          metric1: seed.subGroup || 'Not set', 
-          metric2: seed.type || 'Not set',     
-          metric3: metric3Value                
+          metric1: seed.metric1 || 'Not set', 
+          metric2: seed.metric2 || 'Not set',
+          metric3: seed.metric3 || 'Not set',
+          metric4: seed.metric4 || 'Not set',
+          metric5: seed.metric5 || 'Not set',
+          metric6: seed.metric6 || 'Not set',
+          metric7: seed.metric7 || 'Not set',  
+          metric8: seed.metric8 || 'Not set',              
         };
       });
   }, [allSeeds, selectedProject, projects]);
@@ -137,7 +142,12 @@ function SeedsDashboard() {
       priority: idea.priority || 'low',
       metric1: idea.metric1 || '',
       metric2: idea.metric2 || '',
-      metric3: idea.metric3 || ''
+      metric3: idea.metric3 || '',
+      metric2: idea.metric4 || '',
+      metric2: idea.metric5 || '',
+      metric2: idea.metric6 || '',
+      metric2: idea.metric7 || '',
+      metric2: idea.metric8 || '',
     });
     setOpenTestPopup(true); 
   };
@@ -314,7 +324,8 @@ function SeedsDashboard() {
             textAlign: 'center'
           }}>
             <option> </option>
-            <option value={"name"}>Name</option>
+            <option value={"name_ascending"}>Name (Ascending)</option>
+            <option value={"name_descending"}>Name (Descending)</option>
             <option value={"metric_score_ascending"}>Metrics Score (Ascending)</option>
             <option value={"metric_score_descending"}>Metrics Score (Descending)</option>
           </select>
@@ -430,10 +441,45 @@ function SeedsDashboard() {
                   </div>
                 </div>
 
-                <div style={{ marginBottom: '16px' }}>
+                <div style={{ marginBottom: '12px' }}>
                   <strong>Metric 3:</strong>
                   <div style={{ marginTop: '2px', fontSize: '11px' }}>
                     {idea.metric3 || 'Not set'}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '12px' }}>
+                  <strong>Metric 4:</strong>
+                  <div style={{ marginTop: '2px', fontSize: '11px' }}>
+                    {idea.metric4 || 'Not set'}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '12px' }}>
+                  <strong>Metric 5:</strong>
+                  <div style={{ marginTop: '2px', fontSize: '11px' }}>
+                    {idea.metric6 || 'Not set'}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '12px' }}>
+                  <strong>Metric 6:</strong>
+                  <div style={{ marginTop: '2px', fontSize: '11px' }}>
+                    {idea.metric6 || 'Not set'}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '12px' }}>
+                  <strong>Metric 7:</strong>
+                  <div style={{ marginTop: '2px', fontSize: '11px' }}>
+                    {idea.metric7 || 'Not set'}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                  <strong>Metric 8:</strong>
+                  <div style={{ marginTop: '2px', fontSize: '11px' }}>
+                    {idea.metric8 || 'Not set'}
                   </div>
                 </div>
 
@@ -554,8 +600,14 @@ function SeedsDashboard() {
                 creatorName: user?._id || null,
                 creatorEmail: user?.email || "",
                 group: currentProjectGroup || `Project ${selectedProject}`,
-                subGroup: ideaFormData.metric1 || "", 
-                type: ideaFormData.metric2 || "",  
+                metric1: ideaFormData.metric1 || "", 
+                metric2: ideaFormData.metric2 || "", 
+                metric3: ideaFormData.metric3 || "", 
+                metric4: ideaFormData.metric4 || "", 
+                metric5: ideaFormData.metric5 || "", 
+                metric6: ideaFormData.metric6 || "", 
+                metric7: ideaFormData.metric7 || "",
+                metric8: ideaFormData.metric8 || "",   
                 priority: (ideaFormData.priority || "low").toLowerCase(),
                 description: cleanDescription + (ideaFormData.metric3 ? `||METRIC3:${ideaFormData.metric3}` : ""),
               };
