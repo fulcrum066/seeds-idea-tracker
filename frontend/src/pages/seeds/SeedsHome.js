@@ -305,6 +305,47 @@ function SeedsDashboard() {
         gap: '16px',
         maxWidth: 'calc(100vw - 300px)' 
       }}>
+        {/*Filter*/}
+        <div style={{display: 'flex'}}>
+          <select style={{
+            width: '120px',
+            height: '40px',
+            borderRadius:'5px 0px 0px 5px',
+            textAlign: 'center'
+          }}>
+            <option> </option>
+            <option value={"name"}>Name</option>
+            <option value={"metric_score_ascending"}>Metrics Score (Ascending)</option>
+            <option value={"metric_score_descending"}>Metrics Score (Descending)</option>
+          </select>
+          <img src='/projectBoard_images/filter.png' style={{width:'40px', height:'40px', border:'1px solid black', borderRadius:'0px 5px 5px 0px', marginRight: '20px'}}></img>
+          
+          {/*Search Bar */}
+          <form style={{
+            width: '950vh',
+            height: '40px',
+            backgroundColor: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            borderRadius: '60px',
+            padding: '10px 20px',
+            justifyContent: 'right'
+          }}>
+            <input type="text" placeholder="Enter Idea Name" name="q" style={{
+              background: 'transparent',
+              flex: '1',
+              border: '0',
+              outline: 'none',
+              padding: '24px 20px',
+              fontSize: '20px',
+              color: 'black',
+
+            }}>
+            </input>
+            <button type="submit" style={{paddingRight: '10px', }}><img src="/projectBoard_images/search.png" style={{width:'33px', height:'25px', verticalAlign: 'middle', paddingRight: '5px'}}></img>Search</button>
+          </form>
+        </div>
+
         {/*Idea cards*/}
         {filteredIdeas.map((idea) => (
           <div
