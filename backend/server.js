@@ -8,7 +8,7 @@ const connectDB = require("./config/db");
 const cors = require("cors");
 
 // Port from .env or default to 5000
-const port = process.env.PORT || 5001;
+const port = process.env.PORT || 5000;
 
 // Initialize express
 const app = express();
