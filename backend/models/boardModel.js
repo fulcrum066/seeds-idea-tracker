@@ -4,8 +4,8 @@ const { Schema } = mongoose;
 const boardSchema = new Schema({
     projectName: { type: String, require: true },
     seeds: {type: Array},
-    admins: {type: Array},
-    users: {type: Array},
+    admins: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    users: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     weight1: {type: Number},
     weight2: {type: Number},
     weight3: {type: Number},

@@ -17,6 +17,7 @@ const registerUser = asyncHandler(async (req, res) => {
       lastName: user.lastName,
       email: user.email,
       roles: user.roles,
+      boards: user.boards || [],
       token: generateToken(user._id),
     });
   } catch (err) {
@@ -42,6 +43,7 @@ const loginUser = asyncHandler(async (req, res) => {
       lastName: user.lastName,
       email: user.email,
       roles: user.roles,
+      boards: user.boards || [],
       token: generateToken(user._id),
       supervisor: user.supervisor,
     });
@@ -164,7 +166,7 @@ const getUserIdByEmail = asyncHandler(async (req, res) => {
 //-----------------------------------------------------------------------------------
 
 const updateUserOne = asyncHandler(async (req, res) => {
-  var { _id, firstName, lastName, email, password: pw, roles } = req.body;
+  var { _id, firstName, lastName, email, password: pw, roles, boards } = req.body;
 
   var password = "";
 
@@ -189,7 +191,7 @@ const updateUserOne = asyncHandler(async (req, res) => {
     password = await bcrypt.hash(pw, salt);
   }
 
-  var combined = { _id, firstName, lastName, email, password, roles };
+  var combined = { _id, firstName, lastName, email, password, roles, boards };
 
   const updatedUserOne = await User.findByIdAndUpdate(_id, combined, {
     new: true,
@@ -202,6 +204,7 @@ const updateUserOne = asyncHandler(async (req, res) => {
       lastName: updatedUserOne.lastName,
       email: updatedUserOne.email,
       roles: updatedUserOne.roles,
+      boards: updatedUserOne.boards,
       token: generateToken(req.params.id),
     });
   } else {
