@@ -12,6 +12,7 @@ import PageNotFound from "./components/Authenticate/PageNotFound";
 import Unauthorised from "./components/Authenticate/Unauthorised";
 import Forbidden from "./components/Authenticate/AccessDenied";
 import HomePage from "./pages/home/HomePage";
+import UserHomePage from "./pages/dashboard/HomePage";
 //pages
 import SeedsHome from "./pages/seeds/SeedsHome";
 import Nav from "./pages/navigation/Nav";
@@ -38,6 +39,7 @@ function App() {
           <Route path="unauthorised" element={<Unauthorised />} />
           <Route path="/logout" element={<Logout />} />
           <Route path="*" element={<PageNotFound />} />
+          <Route path="/userHomepage" element={<UserHomePage/>} />
         </Route>
         {/* -----------------------------------Authenticated Routes----------------------------------- */}
 
@@ -60,7 +62,11 @@ function App() {
             />
           }
         >
-          <Route path="dashboard" element={<HomePage />} />
+          <Route path="dashboard" element={
+              <div style={{ width: '100vw', height: '100vh', overflow: 'auto' }}>
+                <UserHomePage />
+              </div>
+            }/>
           <Route path="*" element={<PageNotFound />} />
           <Route path="/dashboard/seed/" element={<SeedsHome />} />
           <Route path="/admin" element={<AdminPanel />} />
