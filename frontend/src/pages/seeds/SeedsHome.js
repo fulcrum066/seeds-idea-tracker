@@ -30,8 +30,9 @@ function SeedsDashboard() {
   const { allSeeds, isLoading } = useSelector((state) => state.seeds);
   const { user, isLoading: isUserLoading } = useSelector((state) => state.auth);
 
-  // board state 
-  const [board, setBoard] = useState(null);
+  // boards state
+  const [boards, setBoards] = useState([]); // all boards the user has access to
+  const [activeBoard, setActiveBoard] = useState(null); // currently selected board
   const [boardLoading, setBoardLoading] = useState(false);
   const [boardError, setBoardError] = useState("");
 
@@ -47,7 +48,7 @@ function SeedsDashboard() {
     dispatch(getUser());
   }, [dispatch]);
 
-  // Load Board
+  // Load Boards for current user
   useEffect(() => {
     let alive = true;
     const load = async () => {
@@ -55,12 +56,28 @@ function SeedsDashboard() {
         setBoardError("");
         setBoardLoading(true);
         const token = user?.token;
-        const boards = await getBoards(token); // axios GET /api/board/board
-        const active = Array.isArray(boards) ? boards[0] : null;
-        if (alive) setBoard(active);
+        const fetched = await getBoards(token); // axios GET /api/board/board (expects array)
+        const allBoards = Array.isArray(fetched) ? fetched : [];
+
+        // Optional filtering if your backend returns all boards and you want only those user belongs to.
+        // If your backend already returns only the user's boards, you can skip the filter step.
+        const userBoards = allBoards.filter((b) => {
+          // accomodate different shapes: admins/users may be arrays of IDs or emails
+          const userId = user?._id;
+          const inAdmins = Array.isArray(b.admins) && b.admins.includes(userId);
+          const inUsers = Array.isArray(b.users) && b.users.includes(userId);
+          const inUserBoards = Array.isArray(user?.boards) && b._id && user.boards.includes(b._id);
+          return inAdmins || inUsers || inUserBoards || true; // keep `true` if you trust API to already filter; change as needed
+        });
+
+        if (alive) {
+          setBoards(userBoards);
+          // default active board: if previously selected project maps to a board, try to keep it, else first
+          setActiveBoard(userBoards.length > 0 ? userBoards[0] : null);
+        }
       } catch (e) {
         if (alive) setBoardError(e?.response?.data || String(e));
-        console.error("Failed to load board:", e);
+        console.error("Failed to load boards:", e);
       } finally {
         if (alive) setBoardLoading(false);
       }
@@ -71,7 +88,7 @@ function SeedsDashboard() {
     };
   }, [user]);
 
-  // Build project list from seed groups (unchanged, just a tidy safety pass)
+  // Build project list from seed groups (unchanged)
   const projects = useMemo(() => {
     let projectList = [];
 
@@ -98,11 +115,11 @@ function SeedsDashboard() {
     return projectList;
   }, [allSeeds]);
 
-  // Use board.seeds if available, else filter Redux seeds by selected project
+  // Use activeBoard.seeds if available, else filter Redux seeds by selected project
   const filteredIdeas = useMemo(() => {
-    // Prefer board.seeds if present
-    if (board?.seeds && Array.isArray(board.seeds) && board.seeds.length > 0) {
-      return board.seeds.map((seed, index) => {
+    // Prefer activeBoard.seeds if present
+    if (activeBoard?.seeds && Array.isArray(activeBoard.seeds) && activeBoard.seeds.length > 0) {
+      return activeBoard.seeds.map((seed, index) => {
         let cleanDescription = seed.description || "No description provided";
         let metric3Value = "Not set";
         if (typeof cleanDescription === "string" && cleanDescription.includes("||METRIC3:")) {
@@ -175,7 +192,7 @@ function SeedsDashboard() {
           metric8: seed.metric8 || "Not set",
         };
       });
-  }, [board, allSeeds, selectedProject, projects]);
+  }, [activeBoard, allSeeds, selectedProject, projects]);
 
   // Creates a new seed in the database
   const handleCreateSeed = (seedData) => {
@@ -248,7 +265,6 @@ function SeedsDashboard() {
           <div
             style={{
               width: "300px",
-              //backgroundColor: "#f1dc99", 
               padding: "20px",
               display: "flex",
               flexDirection: "column",
@@ -275,7 +291,7 @@ function SeedsDashboard() {
                 onClick={() => navigate("/admin")}
                 style={{
                   width: "100%",
-                  backgroundColor: "#6a951f", //admin button
+                  backgroundColor: "#6a951f",
                   color: "white",
                   padding: "8px 12px",
                   borderRadius: "6px",
@@ -295,15 +311,15 @@ function SeedsDashboard() {
                   <Chip color="error" size="small" label="Board load error" />
                 </div>
               )}
-              {board && (
+              {activeBoard && (
                 <div style={{ marginTop: 8, fontSize: 12, color: "#6a4026" }}>
                   <div>
                     <strong>Project:</strong>{" "}
-                    {board.projectName || "Project Board"}
+                    {activeBoard.projectName || "Project Board"}
                   </div>
                   <div>
-                    <strong>Admins:</strong> {board.admins?.length ?? 0} •{" "}
-                    <strong>Users:</strong> {board.users?.length ?? 0}
+                    <strong>Admins:</strong> {activeBoard.admins?.length ?? 0} •{" "}
+                    <strong>Users:</strong> {activeBoard.users?.length ?? 0}
                   </div>
                 </div>
               )}
@@ -323,19 +339,25 @@ function SeedsDashboard() {
                 PROJECT BOARDS:
               </h3>
 
-              {projects.map((project) => (
+              {boards.length === 0 && (
+                <div style={{ fontSize: "12px", color: "#6a4026" }}>
+                  No boards assigned to you yet.
+                </div>
+              )}
+
+              {boards.map((b) => (
                 <button
-                  key={project.id}
-                  onClick={() => setSelectedProject(project.id)}
+                  key={b._id || b.id || b.projectName}
+                  onClick={() => setActiveBoard(b)}
                   style={{
                     width: "100%",
                     backgroundColor:
-                      selectedProject === project.id ? "#6a951f" : "#f1dc99",
-                    color: selectedProject === project.id ? "white" : "#6a4026",
+                      activeBoard?._id === b._id ? "#6a951f" : "#f1dc99",
+                    color: activeBoard?._id === b._id ? "white" : "#6a4026",
                     padding: "8px 12px",
                     borderRadius: "6px",
                     border:
-                      selectedProject === project.id
+                      activeBoard?._id === b._id
                         ? "none"
                         : "1px solid #d4af37",
                     fontSize: "12px",
@@ -345,7 +367,7 @@ function SeedsDashboard() {
                     textAlign: "left",
                   }}
                 >
-                  {project.name}
+                  {b.projectName || b.name || "Untitled Board"}
                 </button>
               ))}
             </div>
@@ -406,7 +428,6 @@ function SeedsDashboard() {
           <div
             style={{
               flex: 1,
-              //backgroundColor: "#ffffff",
               padding: "20px 60px 20px 20px",
               display: "flex",
               flexDirection: "column",
@@ -691,14 +712,15 @@ function SeedsDashboard() {
                     return;
                   }
 
-                  const currentProjectGroup = projects[selectedProject]?.groupName;
+                  // prefer activeBoard projectName as the group, otherwise fall back to selected project group
+                  const currentProjectGroup = activeBoard?.projectName || projects[selectedProject]?.groupName || `Project ${selectedProject}`;
 
                   // Data to be used in backend
                   const seedData = {
                     title: cleanTitle,
                     creatorName: user?._id || null,
                     creatorEmail: user?.email || "",
-                    group: currentProjectGroup || `Project ${selectedProject}`,
+                    group: currentProjectGroup,
                     metric1: ideaFormData.metric1 || "",
                     metric2: ideaFormData.metric2 || "",
                     metric3: ideaFormData.metric3 || "",
@@ -708,7 +730,6 @@ function SeedsDashboard() {
                     metric7: ideaFormData.metric7 || "",
                     metric8: ideaFormData.metric8 || "",
                     priority: (ideaFormData.priority || "low").toLowerCase(),
-                    // Single description field; append METRIC3 tag if provided
                     description:
                       cleanDescription +
                       (ideaFormData.metric3 ? `||METRIC3:${ideaFormData.metric3}` : ""),
