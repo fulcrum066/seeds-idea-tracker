@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 const seedSchema = new Schema({
-  title: {type: String, require: true },
+  title: { type: String, require: true },
   description: { type: String, required: true },
   creatorName: { type: Schema.Types.ObjectId, ref: "User", required: true },
   creatorEmail: { type: String },

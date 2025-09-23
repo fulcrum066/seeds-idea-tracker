@@ -145,6 +145,20 @@ const getUserOne = asyncHandler(async (req, res) => {
   res.status(200).json(userOne);
 });
 
+const getUserIdByEmail = asyncHandler(async (req, res) => {
+  const email = req.params.email;
+
+  // Find user by email
+  const user = await User.findOne({ email: email });
+
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  // Return only the user ID
+  res.status(200).json({ _id: user._id });
+});
+
 //-----------------------------------------------------------------------------------
 //--------------------------------------UPDATE ONES----------------------------------
 //-----------------------------------------------------------------------------------
@@ -281,6 +295,7 @@ module.exports = {
   updateUser,
   deleteUser,
   getUserOne,
+  getUserIdByEmail,
   updateUserOne,
   manageUserOne,
 };

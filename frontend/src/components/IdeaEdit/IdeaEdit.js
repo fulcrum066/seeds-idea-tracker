@@ -115,7 +115,6 @@ function IdeaEdit({ setFormData, user }) {
           onChange={(e) => setDescription(e.target.value)}
         />
 
-        {/* Add Label + Priority row */}
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '12px', alignSelf: 'flex-start' }}>
           <button
             style={{

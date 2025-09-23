@@ -1,4 +1,3 @@
-// Some setup 
 import React, { useState, useEffect, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
@@ -6,9 +5,10 @@ import {
   createSeed,
   updateSeeds,
   deleteSeeds,
-  modifySeed
+  modifySeed,
 } from "../../features/seed/seedSlice";
 import { getUser } from "../../features/auth/authSlice";
+import { getBoards } from "../../features/board/boardService"; 
 import Spinner from "../../components/Spinner";
 import IdeaEdit from "../../components/IdeaEdit/IdeaEdit";
 import {
@@ -18,66 +18,124 @@ import {
   DialogContent,
   DialogActions,
   IconButton,
+  Chip,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import { useNavigate } from "react-router-dom";
 
 function SeedsDashboard() {
-  const dispatch = useDispatch(); 
-  const { allSeeds, isLoading } = useSelector((state) => state.seeds); 
-  const { user, isLoading: isUserLoading } = useSelector(
-    (state) => state.auth
-  ); 
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { allSeeds, isLoading } = useSelector((state) => state.seeds);
+  const { user, isLoading: isUserLoading } = useSelector((state) => state.auth);
 
-  // Consts to maintain data used on the page
-  const [selectedProject, setSelectedProject] = useState(0); 
-  const [ideaFormData, setIdeaFormData] = useState({}); 
-  const [openTestPopup, setOpenTestPopup] = useState(false); 
-  const [editingIdea, setEditingIdea] = useState(null); 
+  // board state 
+  const [board, setBoard] = useState(null);
+  const [boardLoading, setBoardLoading] = useState(false);
+  const [boardError, setBoardError] = useState("");
 
-  // Getting database data
+  // consts to maintain data used on the page
+  const [selectedProject, setSelectedProject] = useState(0);
+  const [ideaFormData, setIdeaFormData] = useState({});
+  const [openTestPopup, setOpenTestPopup] = useState(false);
+  const [editingIdea, setEditingIdea] = useState(null);
+
+  // getting database data
   useEffect(() => {
-    dispatch(getSeeds()); 
-    dispatch(getUser()); 
+    dispatch(getSeeds());
+    dispatch(getUser());
   }, [dispatch]);
 
-  
-  // This will create the board dynamically so we can later add functionality to adding project boards etc
+  // Load Board
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      try {
+        setBoardError("");
+        setBoardLoading(true);
+        const token = user?.token;
+        const boards = await getBoards(token); // axios GET /api/board/board
+        const active = Array.isArray(boards) ? boards[0] : null;
+        if (alive) setBoard(active);
+      } catch (e) {
+        if (alive) setBoardError(e?.response?.data || String(e));
+        console.error("Failed to load board:", e);
+      } finally {
+        if (alive) setBoardLoading(false);
+      }
+    };
+    if (user) load();
+    return () => {
+      alive = false;
+    };
+  }, [user]);
+
+  // Build project list from seed groups (unchanged, just a tidy safety pass)
   const projects = useMemo(() => {
     let projectList = [];
-    
-    // Safety check 
-    if (allSeeds && Array.isArray(allSeeds) && allSeeds.length > 0) {
-      const uniqueGroups = [...new Set(allSeeds.map(seed => seed.group).filter(group => group))];
-      projectList = uniqueGroups.map((group, index) => ({
-        id: index,
-        name: `Project ${index+1}`, 
-        groupName: group 
+
+    if (Array.isArray(allSeeds) && allSeeds.length > 0) {
+      const uniqueGroups = [
+        ...new Set(allSeeds.map((s) => s.group).filter(Boolean)),
+      ];
+      projectList = uniqueGroups.map((group, i) => ({
+        id: i,
+        name: `Project ${i + 1}`,
+        groupName: group,
       }));
     }
-    
-    // This is so that there's always one project board can get rid of later
-    while (projectList.length < 1) {
-      const index = projectList.length;
+
+    // Ensure at least 1 project exists
+    if (projectList.length < 1) {
       projectList.push({
-        id: index,
-        name: `Project ${index}`,
-        groupName: `Project ${index}`
+        id: 0,
+        name: "Project 1",
+        groupName: "Project 1",
       });
     }
-    
+
     return projectList;
   }, [allSeeds]);
 
-  // Filters seeds based on selected project 
+  // Use board.seeds if available, else filter Redux seeds by selected project
   const filteredIdeas = useMemo(() => {
-    if (!allSeeds || !Array.isArray(allSeeds) || allSeeds.length === 0) {
-      // In case we don't have an idea on a board this can also go if needed
+    // Prefer board.seeds if present
+    if (board?.seeds && Array.isArray(board.seeds) && board.seeds.length > 0) {
+      return board.seeds.map((seed, index) => {
+        let cleanDescription = seed.description || "No description provided";
+        let metric3Value = "Not set";
+        if (typeof cleanDescription === "string" && cleanDescription.includes("||METRIC3:")) {
+          const parts = cleanDescription.split("||METRIC3:");
+          cleanDescription = parts[0];
+          metric3Value = parts[1] || "Not set";
+        }
+
+        return {
+          id: seed._id || seed.id || index,
+          title: seed.title || "Untitled Idea",
+          content: cleanDescription,
+          creator: seed.creatorEmail,
+          priority: seed.priority,
+          metric1: seed.metric1 || "Not set",
+          metric2: seed.metric2 || "Not set",
+          metric3: metric3Value !== "Not set" ? metric3Value : (seed.metric3 || "Not set"),
+          metric4: seed.metric4 || "Not set",
+          metric5: seed.metric5 || "Not set",
+          metric6: seed.metric6 || "Not set",
+          metric7: seed.metric7 || "Not set",
+          metric8: seed.metric8 || "Not set",
+        };
+      });
+    }
+
+    // Otherwise derive from Redux seeds + selected project
+    if (!Array.isArray(allSeeds) || allSeeds.length === 0) {
       return [
         {
           id: 0,
           title: "No Ideas Yet",
-          content: "Click the TEST button to add your first idea!",
-        }
+          content: "Click the CREATE IDEA button to add your first idea!",
+        },
       ];
     }
 
@@ -85,43 +143,39 @@ function SeedsDashboard() {
     if (!selectedProjectData) return [];
 
     return allSeeds
-      .filter(seed => {
+      .filter((seed) => {
         if (!seed.group) {
-          return selectedProject === 0; 
+          return selectedProject === 0;
         }
-        return seed.group === selectedProjectData.groupName; 
+        return seed.group === selectedProjectData.groupName;
       })
-      .map(seed => {
+      .map((seed, index) => {
         let cleanDescription = seed.description || "No description provided";
-        let metric3Value = 'Not set';
-        
-        if (cleanDescription.includes('||METRIC3:')) {
-          const parts = cleanDescription.split('||METRIC3:');
+        let metric3Value = "Not set";
+        if (typeof cleanDescription === "string" && cleanDescription.includes("||METRIC3:")) {
+          const parts = cleanDescription.split("||METRIC3:");
           cleanDescription = parts[0];
-          metric3Value = parts[1] || 'Not set';
+          metric3Value = parts[1] || "Not set";
         }
-        
-        // This gets the database data and translates it for this page
+
         return {
-          id: seed._id || seed.id,
-          title: seed.title || "Untitled Idea", // I think there's a backend thing here idk
+          id: seed._id || seed.id || index,
+          title: seed.title || "Untitled Idea",
           content: cleanDescription,
           creator: seed.creatorEmail,
           priority: seed.priority,
-          // Metric stuff, will be changed when proper metrics are sorted out
-          metric1: seed.metric1 || 'Not set', 
-          metric2: seed.metric2 || 'Not set',
-          metric3: seed.metric3 || 'Not set',
-          metric4: seed.metric4 || 'Not set',
-          metric5: seed.metric5 || 'Not set',
-          metric6: seed.metric6 || 'Not set',
-          metric7: seed.metric7 || 'Not set',  
-          metric8: seed.metric8 || 'Not set',              
+          metric1: seed.metric1 || "Not set",
+          metric2: seed.metric2 || "Not set",
+          metric3: metric3Value !== "Not set" ? metric3Value : (seed.metric3 || "Not set"),
+          metric4: seed.metric4 || "Not set",
+          metric5: seed.metric5 || "Not set",
+          metric6: seed.metric6 || "Not set",
+          metric7: seed.metric7 || "Not set",
+          metric8: seed.metric8 || "Not set",
         };
       });
-  }, [allSeeds, selectedProject, projects]);
+  }, [board, allSeeds, selectedProject, projects]);
 
-  
   // Creates a new seed in the database
   const handleCreateSeed = (seedData) => {
     dispatch(createSeed(seedData));
@@ -129,36 +183,37 @@ function SeedsDashboard() {
 
   // Opens the create/edit popup for new idea
   const handleOpenTestPopup = () => {
-    setEditingIdea(null); 
-    setIdeaFormData({}); 
-    setOpenTestPopup(true); 
+    setEditingIdea(null);
+    setIdeaFormData({});
+    setOpenTestPopup(true);
   };
-  
+
   const handleEditIdea = (idea) => {
-    setEditingIdea(idea); 
+    setEditingIdea(idea);
     setIdeaFormData({
       title: idea.title,
-      description: idea.content, 
-      priority: idea.priority || 'low',
-      metric1: idea.metric1 || '',
-      metric2: idea.metric2 || '',
-      metric3: idea.metric3 || '',
-      metric2: idea.metric4 || '',
-      metric2: idea.metric5 || '',
-      metric2: idea.metric6 || '',
-      metric2: idea.metric7 || '',
-      metric2: idea.metric8 || '',
+      description: idea.content,
+      priority: idea.priority || "low",
+      metric1: idea.metric1 || "",
+      metric2: idea.metric2 || "",
+      metric3: idea.metric3 || "",
+      metric4: idea.metric4 || "",
+      metric5: idea.metric5 || "",
+      metric6: idea.metric6 || "",
+      metric7: idea.metric7 || "",
+      metric8: idea.metric8 || "",
     });
-    setOpenTestPopup(true); 
+    setOpenTestPopup(true);
   };
-  
+
   // Deletes an idea after confirmation
   const handleDeleteIdea = (ideaId) => {
-    if (window.confirm('Are you sure you want to delete this idea?')) {
+    if (window.confirm("Are you sure you want to delete this idea?")) {
+      // your deleteSeeds expects an array of IDs
       dispatch(deleteSeeds([ideaId]));
     }
   };
-  
+
   // Closes the create/edit dialog and resets state
   const handleCloseTestPopup = () => {
     setOpenTestPopup(false);
@@ -166,88 +221,119 @@ function SeedsDashboard() {
     setIdeaFormData({});
   };
 
-  // Show spinner while data is loading idk it was already here
-  if (isLoading || isUserLoading) return <Spinner />;
+  // Show spinner while data is loading
+  if (isLoading || isUserLoading || boardLoading) return <Spinner />;
 
-  // CSS section
   return (
-    <div style={{ 
-      display: 'flex', 
-      minHeight: '100vh', 
-      backgroundColor: '#f1dc99', 
-      width: '100%',
-      margin: 0,
-      padding: 0
-    }}>
-      {/*Sidebar*/}
-      <div style={{ 
-        width: '300px', 
-        backgroundColor: '#f1dc99', 
-        padding: '20px', 
-        display: 'flex', 
-        flexDirection: 'column',
-        gap: '12px',
-        minHeight: '100vh'
-      }}>
-        {/*Header*/}
+    <div
+      style={{
+        display: "flex",
+        minHeight: "100vh",
+        backgroundColor: "#f1dc99",
+        width: "100%",
+        margin: 0,
+        padding: 0,
+      }}
+    >
+      {/* Sidebar */}
+      <div
+        style={{
+          width: "300px",
+          backgroundColor: "#f1dc99",
+          padding: "20px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+          minHeight: "100vh",
+        }}
+      >
+        {/* Header */}
         <div>
-          <h1 style={{ 
-            fontSize: '18px', 
-            fontWeight: 'bold', 
-            color: '#6a4026', 
-            marginBottom: '16px',
-            margin: '0 0 16px 0'
-          }}>
+          <h1
+            style={{
+              fontSize: "18px",
+              fontWeight: "bold",
+              color: "#6a4026",
+              marginBottom: "16px",
+              margin: "0 0 16px 0",
+            }}
+          >
             SEEDS IDEA BOARD:
           </h1>
-          
-          {/*Admin panel button*/}
-          <button style={{
-            width: '100%',
-            backgroundColor: '#6a951f',
-            color: 'white',
-            padding: '8px 12px',
-            borderRadius: '6px',
-            border: 'none',
-            fontSize: '12px',
-            fontWeight: 'bold',
-            marginBottom: '16px',
-            cursor: 'pointer'
-          }}>
+
+          {/* Admin panel button */}
+          <button
+            onClick={() => navigate("/admin")}
+            style={{
+              width: "100%",
+              backgroundColor: "#6a951f",
+              color: "white",
+              padding: "8px 12px",
+              borderRadius: "6px",
+              border: "none",
+              fontSize: "12px",
+              fontWeight: "bold",
+              marginBottom: "16px",
+              cursor: "pointer",
+            }}
+          >
             ADMIN PANEL
           </button>
+
+          {/* Board summary (NEW) */}
+          {boardError && (
+            <div style={{ marginTop: 4 }}>
+              <Chip color="error" size="small" label="Board load error" />
+            </div>
+          )}
+          {board && (
+            <div style={{ marginTop: 8, fontSize: 12, color: "#6a4026" }}>
+              <div>
+                <strong>Project:</strong>{" "}
+                {board.projectName || "Project Board"}
+              </div>
+              <div>
+                <strong>Admins:</strong> {board.admins?.length ?? 0} •{" "}
+                <strong>Users:</strong> {board.users?.length ?? 0}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/*Project board outline*/}
+        {/* Project boards */}
         <div>
-          <h3 style={{ 
-            fontSize: '14px', 
-            fontWeight: 'bold', 
-            color: '#6a4026', 
-            marginBottom: '8px',
-            margin: '0 0 8px 0'
-          }}>
+          <h3
+            style={{
+              fontSize: "14px",
+              fontWeight: "bold",
+              color: "#6a4026",
+              marginBottom: "8px",
+              margin: "0 0 8px 0",
+            }}
+          >
             PROJECT BOARDS:
           </h3>
-          
-          {/*Code for project board selection buttons*/}
+
           {projects.map((project) => (
             <button
               key={project.id}
-              onClick={() => setSelectedProject(project.id)} 
+              onClick={() => setSelectedProject(project.id)}
               style={{
-                width: '100%',
-                // Highlight selected project with different colors
-                backgroundColor: selectedProject === project.id ? '#6a951f' : '#f1dc99',
-                color: selectedProject === project.id ? 'white' : '#6a4026',
-                padding: '8px 12px',
-                borderRadius: '6px',
-                border: selectedProject === project.id ? 'none' : '1px solid #d4af37',
-                fontSize: '12px',
-                fontWeight: 'bold',
-                marginBottom: '4px',
-                cursor: 'pointer',
-                textAlign: 'left'
+                width: "100%",
+                backgroundColor:
+                  selectedProject === project.id ? "#6a951f" : "#f1dc99",
+                color: selectedProject === project.id ? "white" : "#6a4026",
+                padding: "8px 12px",
+                borderRadius: "6px",
+                border:
+                  selectedProject === project.id
+                    ? "none"
+                    : "1px solid #d4af37",
+                fontSize: "12px",
+                fontWeight: "bold",
+                marginBottom: "4px",
+                cursor: "pointer",
+                textAlign: "left",
               }}
             >
               {project.name}
@@ -255,269 +341,273 @@ function SeedsDashboard() {
           ))}
         </div>
 
-        {/*Bottom section*/}
-        <div style={{ marginTop: 'auto' }}>
-          {/*Buttons to be expanded on later*/}
-          <button style={{
-            width: '100%',
-            backgroundColor: '#91b472',
-            color: 'white',
-            padding: '8px 12px',
-            borderRadius: '6px',
-            border: 'none',
-            fontSize: '12px',
-            fontWeight: 'bold',
-            marginBottom: '8px',
-            cursor: 'pointer'
-          }}>
+        {/* Bottom section */}
+        <div style={{ marginTop: "auto" }}>
+          <button
+            style={{
+              width: "100%",
+              backgroundColor: "#91b472",
+              color: "white",
+              padding: "8px 12px",
+              borderRadius: "6px",
+              border: "none",
+              fontSize: "12px",
+              fontWeight: "bold",
+              marginBottom: "8px",
+              cursor: "pointer",
+            }}
+          >
             TIME TRACKING
           </button>
-          
-          <button style={{
-            width: '100%',
-            backgroundColor: '#91b472',
-            color: 'white',
-            padding: '8px 12px',
-            borderRadius: '6px',
-            border: 'none',
-            fontSize: '12px',
-            fontWeight: 'bold',
-            marginBottom: '16px',
-            cursor: 'pointer'
-          }}>
+
+          <button
+            style={{
+              width: "100%",
+              backgroundColor: "#91b472",
+              color: "white",
+              padding: "8px 12px",
+              borderRadius: "6px",
+              border: "none",
+              fontSize: "12px",
+              fontWeight: "bold",
+              marginBottom: "16px",
+              cursor: "pointer",
+            }}
+          >
             DRAFTS
           </button>
 
-          {/*Create idea button*/}
           <Button
             variant="contained"
             color="primary"
-            style={{ 
-              backgroundColor: '#6a951f',
-              width: '100%',
-              fontSize: '12px',
-              padding: '8px 12px'
+            style={{
+              backgroundColor: "#6a951f",
+              width: "100%",
+              fontSize: "12px",
+              padding: "8px 12px",
             }}
-            onClick={handleOpenTestPopup} 
+            onClick={handleOpenTestPopup}
           >
             CREATE IDEA
           </Button>
         </div>
       </div>
 
-      {/*Big main section*/}
-      <div style={{ 
-        flex: 1, 
-        backgroundColor: '#f1dc99', 
-        padding: '20px 60px 20px 20px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '16px',
-        maxWidth: 'calc(100vw - 300px)' 
-      }}>
-        {/*Filter*/}
-        <div style={{display: 'flex'}}>
-          <select style={{
-            width: '120px',
-            height: '40px',
-            borderRadius:'5px 0px 0px 5px',
-            textAlign: 'center'
-          }}>
+      {/* Main area */}
+      <div
+        style={{
+          flex: 1,
+          backgroundColor: "#f1dc99",
+          padding: "20px 60px 20px 20px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "16px",
+          maxWidth: "calc(100vw - 300px)",
+        }}
+      >
+        {/* Filter & Search */}
+        <div style={{ display: "flex" }}>
+          <select
+            style={{
+              width: "120px",
+              height: "40px",
+              borderRadius: "5px 0px 0px 5px",
+              textAlign: "center",
+            }}
+          >
             <option> </option>
             <option value={"name_ascending"}>Name (Ascending)</option>
             <option value={"name_descending"}>Name (Descending)</option>
-            <option value={"metric_score_ascending"}>Metrics Score (Ascending)</option>
-            <option value={"metric_score_descending"}>Metrics Score (Descending)</option>
+            <option value={"metric_score_ascending"}>
+              Metrics Score (Ascending)
+            </option>
+            <option value={"metric_score_descending"}>
+              Metrics Score (Descending)
+            </option>
           </select>
-          <img src='/projectBoard_images/filter.png' style={{width:'40px', height:'40px', border:'1px solid black', borderRadius:'0px 5px 5px 0px', marginRight: '20px'}}></img>
-          
-          {/*Search Bar */}
-          <form style={{
-            width: '950vh',
-            height: '40px',
-            backgroundColor: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            borderRadius: '60px',
-            padding: '10px 20px',
-            justifyContent: 'right'
-          }}>
-            <input type="text" placeholder="Enter Idea Name" name="q" style={{
-              background: 'transparent',
-              flex: '1',
-              border: '0',
-              outline: 'none',
-              padding: '24px 20px',
-              fontSize: '20px',
-              color: 'black',
+          <img
+            src="/projectBoard_images/filter.png"
+            style={{
+              width: "40px",
+              height: "40px",
+              border: "1px solid black",
+              borderRadius: "0px 5px 5px 0px",
+              marginRight: "20px",
+            }}
+            alt="filter"
+          />
 
-            }}>
-            </input>
-            <button type="submit" style={{paddingRight: '10px', }}><img src="/projectBoard_images/search.png" style={{width:'33px', height:'25px', verticalAlign: 'middle', paddingRight: '5px'}}></img>Search</button>
+          {/* Search Bar */}
+          <form
+            onSubmit={(e) => e.preventDefault()}
+            style={{
+              width: "950vh",
+              height: "40px",
+              backgroundColor: "white",
+              display: "flex",
+              alignItems: "center",
+              borderRadius: "60px",
+              padding: "10px 20px",
+              justifyContent: "right",
+            }}
+          >
+            <input
+              type="text"
+              placeholder="Enter Idea Name"
+              name="q"
+              style={{
+                background: "transparent",
+                flex: "1",
+                border: "0",
+                outline: "none",
+                padding: "24px 20px",
+                fontSize: "20px",
+                color: "black",
+              }}
+            />
+            <button type="submit" style={{ paddingRight: "10px" }}>
+              <img
+                src="/projectBoard_images/search.png"
+                style={{ width: "33px", height: "25px", verticalAlign: "middle", paddingRight: "5px" }}
+                alt="search"
+              />
+              Search
+            </button>
           </form>
         </div>
 
-        {/*Idea cards*/}
+        {/* Idea cards */}
         {filteredIdeas.map((idea) => (
           <div
             key={idea.id}
             style={{
-              backgroundColor: '#6a4026', 
-              borderRadius: '8px',
-              padding: '16px',
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-              position: 'relative'
+              backgroundColor: "#6a4026",
+              borderRadius: "8px",
+              padding: "16px",
+              boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+              position: "relative",
             }}
           >
-            {/*Idea title*/}
-            <h3 style={{
-              color: '#e8c352', 
-              fontSize: '14px',
-              fontWeight: '500',
-              textAlign: 'center',
-              marginBottom: '12px',
-              margin: '0 0 12px 0'
-            }}>
+            <h3
+              style={{
+                color: "#e8c352",
+                fontSize: "14px",
+                fontWeight: "500",
+                textAlign: "center",
+                marginBottom: "12px",
+                margin: "0 0 12px 0",
+              }}
+            >
               {idea.title}
             </h3>
-            
-            {/*Idea section separated by left and right*/}
-            <div style={{
-              backgroundColor: 'white',
-              borderRadius: '6px',
-              padding: '16px',
-              minHeight: '100px',
-              color: '#6a4026',
-              fontSize: '13px',
-              lineHeight: '1.4',
-              display: 'flex', 
-              gap: '16px'
-            }}>
-              {/*Left side has the data*/}
-              <div style={{ flex: '1' }}>
-                {/*Description field*/}
-                <div style={{ marginBottom: '12px' }}>
+
+            <div
+              style={{
+                backgroundColor: "white",
+                borderRadius: "6px",
+                padding: "16px",
+                minHeight: "100px",
+                color: "#6a4026",
+                fontSize: "13px",
+                lineHeight: "1.4",
+                display: "flex",
+                gap: "16px",
+              }}
+            >
+              {/* Left */}
+              <div style={{ flex: "1" }}>
+                {/* Description */}
+                <div style={{ marginBottom: "12px" }}>
                   <strong>Description:</strong>
-                  <div style={{ marginTop: '2px' }}>{idea.content}</div>
+                  <div style={{ marginTop: "2px" }}>{(idea.content ?? "").toString()}</div>
                 </div>
 
-                {/*Priority stuff can be removed*/}
-                <div style={{ marginBottom: '12px' }}>
+                {/* Priority */}
+                <div style={{ marginBottom: "12px" }}>
                   <strong>Priority:</strong>
-                  <div style={{ 
-                    marginTop: '2px',
-                    padding: '2px 6px',
-                    backgroundColor: idea.priority === 'high' ? '#ffebee' : 
-                                   idea.priority === 'medium' ? '#fff3e0' : '#e8f5e8',
-                    borderRadius: '3px',
-                    display: 'inline-block',
-                    fontSize: '11px',
-                    textTransform: 'capitalize'
-                  }}>
-                    {idea.priority || 'Low'}
+                  <div
+                    style={{
+                      marginTop: "2px",
+                      padding: "2px 6px",
+                      backgroundColor:
+                        idea.priority === "high"
+                          ? "#ffebee"
+                          : idea.priority === "medium"
+                            ? "#fff3e0"
+                            : "#e8f5e8",
+                      borderRadius: "3px",
+                      display: "inline-block",
+                      fontSize: "11px",
+                      textTransform: "capitalize",
+                    }}
+                  >
+                    {idea.priority || "Low"}
                   </div>
                 </div>
 
-                {/*Idea creator field*/}
-                <div style={{ marginBottom: '12px' }}>
+                {/* Creator */}
+                <div style={{ marginBottom: "12px" }}>
                   <strong>Creator:</strong>
-                  <div style={{ marginTop: '2px', fontSize: '11px' }}>
-                    {idea.creator || 'Unknown'}
+                  <div style={{ marginTop: "2px", fontSize: "11px" }}>
+                    {idea.creator || "Unknown"}
                   </div>
                 </div>
 
-                {/*Metrics again to be expanded on*/}
-                <div style={{ marginBottom: '12px' }}>
-                  <strong>Metric 1:</strong>
-                  <div style={{ marginTop: '2px', fontSize: '11px' }}>
-                    {idea.metric1 || 'Not set'}
+                {/* Metrics */}
+                {[
+                  ["Metric 1", idea.metric1],
+                  ["Metric 2", idea.metric2],
+                  ["Metric 3", idea.metric3],
+                  ["Metric 4", idea.metric4],
+                  ["Metric 5", idea.metric5],
+                  ["Metric 6", idea.metric6],
+                  ["Metric 7", idea.metric7],
+                  ["Metric 8", idea.metric8],
+                ].map(([label, value]) => (
+                  <div key={label} style={{ marginBottom: "12px" }}>
+                    <strong>{label}:</strong>
+                    <div style={{ marginTop: "2px", fontSize: "11px" }}>
+                      {value || "Not set"}
+                    </div>
                   </div>
-                </div>
+                ))}
 
-                <div style={{ marginBottom: '12px' }}>
-                  <strong>Metric 2:</strong>
-                  <div style={{ marginTop: '2px', fontSize: '11px' }}>
-                    {idea.metric2 || 'Not set'}
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: '12px' }}>
-                  <strong>Metric 3:</strong>
-                  <div style={{ marginTop: '2px', fontSize: '11px' }}>
-                    {idea.metric3 || 'Not set'}
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: '12px' }}>
-                  <strong>Metric 4:</strong>
-                  <div style={{ marginTop: '2px', fontSize: '11px' }}>
-                    {idea.metric4 || 'Not set'}
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: '12px' }}>
-                  <strong>Metric 5:</strong>
-                  <div style={{ marginTop: '2px', fontSize: '11px' }}>
-                    {idea.metric6 || 'Not set'}
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: '12px' }}>
-                  <strong>Metric 6:</strong>
-                  <div style={{ marginTop: '2px', fontSize: '11px' }}>
-                    {idea.metric6 || 'Not set'}
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: '12px' }}>
-                  <strong>Metric 7:</strong>
-                  <div style={{ marginTop: '2px', fontSize: '11px' }}>
-                    {idea.metric7 || 'Not set'}
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: '16px' }}>
-                  <strong>Metric 8:</strong>
-                  <div style={{ marginTop: '2px', fontSize: '11px' }}>
-                    {idea.metric8 || 'Not set'}
-                  </div>
-                </div>
-
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'flex-start',
-                  gap: '6px'
-                }}>
-                  {/*Edit button*/}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-start",
+                    gap: "6px",
+                  }}
+                >
                   <button
                     onClick={() => handleEditIdea(idea)}
                     style={{
-                      backgroundColor: '#e8c352', 
-                      color: '#6a4026',
-                      border: 'none',
-                      borderRadius: '3px',
-                      padding: '4px 8px',
-                      fontSize: '10px',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                      backgroundColor: "#e8c352",
+                      color: "#6a4026",
+                      border: "none",
+                      borderRadius: "3px",
+                      padding: "4px 8px",
+                      fontSize: "10px",
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                      boxShadow: "0 1px 2px rgba(0, 0, 0, 0.1)",
                     }}
                   >
                     Edit
                   </button>
-                  {/*Delete button*/}
+
                   <button
                     onClick={() => handleDeleteIdea(idea.id)}
                     style={{
-                      backgroundColor: '#dc3545', // Red color for danger action
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '3px',
-                      padding: '8px 12px',
-                      fontSize: '10px',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                      backgroundColor: "#dc3545",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "3px",
+                      padding: "8px 12px",
+                      fontSize: "10px",
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                      boxShadow: "0 1px 2px rgba(0, 0, 0, 0.1)",
                     }}
                   >
                     Delete
@@ -525,42 +615,41 @@ function SeedsDashboard() {
                 </div>
               </div>
 
-              {/*Right side will have file and media upload, placeholder for now*/}
-              <div style={{ 
-                flex: '0 0 200px',
-                backgroundColor: '#f8f9fa',
-                borderRadius: '4px',
-                padding: '12px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '1px dashed #dee2e6', 
-                minHeight: '120px'
-              }}>
-                <div style={{ 
-                  textAlign: 'center', 
-                  color: '#6c757d',
-                  fontSize: '10px'
-                }}>
-                  <div style={{ marginBottom: '4px' }}></div>
-                  <div><strong>Media Section</strong></div>
-                  <div style={{ marginTop: '2px' }}>Images, files, or attachments will display here</div>
+              {/* Right placeholder */}
+              <div
+                style={{
+                  flex: "0 0 200px",
+                  backgroundColor: "#f8f9fa",
+                  borderRadius: "4px",
+                  padding: "12px",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "1px dashed #dee2e6",
+                  minHeight: "120px",
+                }}
+              >
+                <div
+                  style={{ textAlign: "center", color: "#6c757d", fontSize: "10px" }}
+                >
+                  <div>
+                    <strong>Media Section</strong>
+                  </div>
+                  <div style={{ marginTop: "2px" }}>
+                    Images, files, or attachments will display here
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         ))}
       </div>
-      {/*Dialog for popups*/}
-      <Dialog
-        open={openTestPopup} 
-        onClose={handleCloseTestPopup}
-        maxWidth="md"
-        fullWidth
-      >
+
+      {/* Dialog for popups */}
+      <Dialog open={openTestPopup} onClose={handleCloseTestPopup} maxWidth="md" fullWidth>
         <DialogTitle>
-          {editingIdea ? 'Edit Idea' : 'Create New Idea'}
+          {editingIdea ? "Edit Idea" : "Create New Idea"}
           <IconButton
             aria-label="close"
             onClick={handleCloseTestPopup}
@@ -579,8 +668,8 @@ function SeedsDashboard() {
             variant="contained"
             color="primary"
             onClick={() => {
-              const cleanDescription = ideaFormData.description?.trim();
-              const cleanTitle = ideaFormData.title?.trim();
+              const cleanDescription = (ideaFormData.description || "").trim();
+              const cleanTitle = (ideaFormData.title || "").trim();
 
               if (!cleanDescription) {
                 alert("Please enter a description");
@@ -596,37 +685,36 @@ function SeedsDashboard() {
               // Data to be used in backend
               const seedData = {
                 title: cleanTitle,
-                description: cleanDescription,
                 creatorName: user?._id || null,
                 creatorEmail: user?.email || "",
                 group: currentProjectGroup || `Project ${selectedProject}`,
-                metric1: ideaFormData.metric1 || "", 
-                metric2: ideaFormData.metric2 || "", 
-                metric3: ideaFormData.metric3 || "", 
-                metric4: ideaFormData.metric4 || "", 
-                metric5: ideaFormData.metric5 || "", 
-                metric6: ideaFormData.metric6 || "", 
+                metric1: ideaFormData.metric1 || "",
+                metric2: ideaFormData.metric2 || "",
+                metric3: ideaFormData.metric3 || "",
+                metric4: ideaFormData.metric4 || "",
+                metric5: ideaFormData.metric5 || "",
+                metric6: ideaFormData.metric6 || "",
                 metric7: ideaFormData.metric7 || "",
-                metric8: ideaFormData.metric8 || "",   
+                metric8: ideaFormData.metric8 || "",
                 priority: (ideaFormData.priority || "low").toLowerCase(),
-                description: cleanDescription + (ideaFormData.metric3 ? `||METRIC3:${ideaFormData.metric3}` : ""),
+                // Single description field; append METRIC3 tag if provided
+                description:
+                  cleanDescription +
+                  (ideaFormData.metric3 ? `||METRIC3:${ideaFormData.metric3}` : ""),
               };
 
               if (editingIdea) {
-                const updateData = { 
-                  ...seedData, 
-                  _id: editingIdea.id 
-                };
+                const updateData = { ...seedData, _id: editingIdea.id };
                 dispatch(modifySeed(updateData));
                 dispatch(updateSeeds());
               } else {
                 handleCreateSeed(seedData);
               }
-              
+
               handleCloseTestPopup();
             }}
           >
-            {editingIdea ? 'Update Idea' : 'Save & Exit'}
+            {editingIdea ? "Update Idea" : "Save & Exit"}
           </Button>
         </DialogActions>
       </Dialog>
