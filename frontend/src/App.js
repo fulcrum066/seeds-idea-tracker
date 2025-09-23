@@ -16,6 +16,7 @@ import UserHomePage from "./pages/dashboard/HomePage";
 //pages
 import SeedsHome from "./pages/seeds/SeedsHome";
 import Nav from "./pages/navigation/Nav";
+import AdminPanel from "./pages/admin/AdminPanel";
 
 const ROLES = {
   employee: "employee",
@@ -67,10 +68,8 @@ function App() {
               </div>
             }/>
           <Route path="*" element={<PageNotFound />} />
-          <Route
-            path="/dashboard/seed/"
-            element={<Nav main={[<SeedsHome />]} />}
-          />
+          <Route path="/dashboard/seed/" element={<SeedsHome />} />
+          <Route path="/admin" element={<AdminPanel />} />
         </Route>
 
       </Routes>

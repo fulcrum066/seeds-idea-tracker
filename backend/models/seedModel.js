@@ -2,19 +2,25 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 const seedSchema = new Schema({
+  title: { type: String, require: true },
   description: { type: String, required: true },
   creatorName: { type: Schema.Types.ObjectId, ref: "User", required: true },
   creatorEmail: { type: String },
   dateRecorded: { type: Date, default: Date.now },
-  group: { type: String },
-  subGroup: { type: String },
-  type: { type: String },
-  weeksLeadTime: { type: Number },
+  metric1: { type: String },
+  metric2: { type: String },
+  metric3: { type: String },
+  metric4: { type: String },
+  metric5: { type: String },
+  metric6: { type: String },
+  metric7: { type: String },
+  metric8: { type: String },
+  // weeksLeadTime: { type: Number },
   priority: { type: String, enum: ["low", "medium", "high"] },
-  userAssigned: { type: Schema.Types.ObjectId, ref: "User" },
-  startTime: { type: Date },
-  expectedEndTime: { type: Date },
-  completionDate: { type: Date },
+  // userAssigned: { type: Schema.Types.ObjectId, ref: "User" },
+  // startTime: { type: Date },
+  // expectedEndTime: { type: Date },
+  // completionDate: { type: Date },
   status: { type: String },
 });
 

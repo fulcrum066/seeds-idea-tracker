@@ -1,0 +1,1 @@
+//can filter ideas. e.g. show only ideas with a rating of 80% or above.
