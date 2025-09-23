@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-import './HomePageStyle.css'
+import '../../styles/HomePageStyle.css'
 import TopBar from '../../components/Navigation/NavBar';
 
 function Background() {

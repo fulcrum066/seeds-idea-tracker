@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import './NavBarStyle.css';
+import '../../styles/NavBarStyle.css';
 import { useState, useEffect } from "react";
 import authService from "../../features/auth/authService";
 
@@ -65,11 +65,16 @@ function TopBar() {
         <tbody>
           <tr>
             <td>
-              <tr>Hello {currentUser ? currentUser.firstName : "..."}</tr>
-              <tr style={{ fontSize: '8px' }}>{currentUser?.email}</tr>
-              
+              <div>Hello {currentUser ? currentUser.firstName : "..."}</div>
+              <div style={{ fontSize: '8px' }}>{currentUser?.email}</div>
             </td>
-            <td><img alt="profile picture" src="/dashboard_images/profile_pic.png" className="pfp" /></td>
+            <td>
+              <img
+                alt="profile picture"
+                src="/dashboard_images/profile_pic.png"
+                className="pfp"
+              />
+            </td>
           </tr>
         </tbody>
       </table>
