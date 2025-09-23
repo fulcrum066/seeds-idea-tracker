@@ -22,6 +22,13 @@ const seedSchema = new Schema({
   // expectedEndTime: { type: Date },
   // completionDate: { type: Date },
   status: { type: String },
+  isFavorite: { type: Boolean, default: false },
+  comments: [{
+    text: { type: String, required: true },
+    author: { type: String, required: true },
+    authorEmail: { type: String },
+    createdAt: { type: Date, default: Date.now }
+  }]
 });
 
 const Seed = mongoose.model("Seed", seedSchema);
