@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import TopBar from '../../components/Navigation/NavBar';
 import { useSelector, useDispatch } from "react-redux";
 import {
   getSeeds,
@@ -8,7 +9,7 @@ import {
   modifySeed,
 } from "../../features/seed/seedSlice";
 import { getUser } from "../../features/auth/authSlice";
-import { getBoards } from "../../features/board/boardService"; 
+import { getBoards } from "../../features/board/boardService";
 import Spinner from "../../components/Spinner";
 import IdeaEdit from "../../components/IdeaEdit/IdeaEdit";
 import {
@@ -225,500 +226,512 @@ function SeedsDashboard() {
   if (isLoading || isUserLoading || boardLoading) return <Spinner />;
 
   return (
-    <div
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        backgroundColor: "#f1dc99",
-        width: "100%",
-        margin: 0,
-        padding: 0,
-      }}
-    >
-      {/* Sidebar */}
-      <div
-        style={{
-          width: "300px",
-          backgroundColor: "#f1dc99",
-          padding: "20px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px",
-          minHeight: "100vh",
-        }}
-      >
-        {/* Header */}
-        <div>
-          <h1
-            style={{
-              fontSize: "18px",
-              fontWeight: "bold",
-              color: "#6a4026",
-              marginBottom: "16px",
-              margin: "0 0 16px 0",
-            }}
-          >
-            SEEDS IDEA BOARD:
-          </h1>
+    <>
+      <TopBar />
+      <div style={{ paddingTop: '60px' }}>
+        <div
+          style={{
+            display: "flex",
+            minHeight: "100vh",
+            backgroundImage: 'url("/dashboard_images/Background.png")',
+            backgroundSize: 'cover',
+            zIndex: -1,
+            width: "100%",
+            backgroundAttachment: "fixed",
+            backgroundPosition: "center",
+            margin: 0,
+            padding: 0,
+          }}
+        >
 
-          {/* Admin panel button */}
-          <button
-            onClick={() => navigate("/admin")}
-            style={{
-              width: "100%",
-              backgroundColor: "#6a951f",
-              color: "white",
-              padding: "8px 12px",
-              borderRadius: "6px",
-              border: "none",
-              fontSize: "12px",
-              fontWeight: "bold",
-              marginBottom: "16px",
-              cursor: "pointer",
-            }}
-          >
-            ADMIN PANEL
-          </button>
-
-          {/* Board summary (NEW) */}
-          {boardError && (
-            <div style={{ marginTop: 4 }}>
-              <Chip color="error" size="small" label="Board load error" />
-            </div>
-          )}
-          {board && (
-            <div style={{ marginTop: 8, fontSize: 12, color: "#6a4026" }}>
-              <div>
-                <strong>Project:</strong>{" "}
-                {board.projectName || "Project Board"}
-              </div>
-              <div>
-                <strong>Admins:</strong> {board.admins?.length ?? 0} •{" "}
-                <strong>Users:</strong> {board.users?.length ?? 0}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Project boards */}
-        <div>
-          <h3
-            style={{
-              fontSize: "14px",
-              fontWeight: "bold",
-              color: "#6a4026",
-              marginBottom: "8px",
-              margin: "0 0 8px 0",
-            }}
-          >
-            PROJECT BOARDS:
-          </h3>
-
-          {projects.map((project) => (
-            <button
-              key={project.id}
-              onClick={() => setSelectedProject(project.id)}
-              style={{
-                width: "100%",
-                backgroundColor:
-                  selectedProject === project.id ? "#6a951f" : "#f1dc99",
-                color: selectedProject === project.id ? "white" : "#6a4026",
-                padding: "8px 12px",
-                borderRadius: "6px",
-                border:
-                  selectedProject === project.id
-                    ? "none"
-                    : "1px solid #d4af37",
-                fontSize: "12px",
-                fontWeight: "bold",
-                marginBottom: "4px",
-                cursor: "pointer",
-                textAlign: "left",
-              }}
-            >
-              {project.name}
-            </button>
-          ))}
-        </div>
-
-        {/* Bottom section */}
-        <div style={{ marginTop: "auto" }}>
-          <button
-            style={{
-              width: "100%",
-              backgroundColor: "#91b472",
-              color: "white",
-              padding: "8px 12px",
-              borderRadius: "6px",
-              border: "none",
-              fontSize: "12px",
-              fontWeight: "bold",
-              marginBottom: "8px",
-              cursor: "pointer",
-            }}
-          >
-            TIME TRACKING
-          </button>
-
-          <button
-            style={{
-              width: "100%",
-              backgroundColor: "#91b472",
-              color: "white",
-              padding: "8px 12px",
-              borderRadius: "6px",
-              border: "none",
-              fontSize: "12px",
-              fontWeight: "bold",
-              marginBottom: "16px",
-              cursor: "pointer",
-            }}
-          >
-            DRAFTS
-          </button>
-
-          <Button
-            variant="contained"
-            color="primary"
-            style={{
-              backgroundColor: "#6a951f",
-              width: "100%",
-              fontSize: "12px",
-              padding: "8px 12px",
-            }}
-            onClick={handleOpenTestPopup}
-          >
-            CREATE IDEA
-          </Button>
-        </div>
-      </div>
-
-      {/* Main area */}
-      <div
-        style={{
-          flex: 1,
-          backgroundColor: "#f1dc99",
-          padding: "20px 60px 20px 20px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px",
-          maxWidth: "calc(100vw - 300px)",
-        }}
-      >
-        {/* Filter & Search */}
-        <div style={{ display: "flex" }}>
-          <select
-            style={{
-              width: "120px",
-              height: "40px",
-              borderRadius: "5px 0px 0px 5px",
-              textAlign: "center",
-            }}
-          >
-            <option> </option>
-            <option value={"name_ascending"}>Name (Ascending)</option>
-            <option value={"name_descending"}>Name (Descending)</option>
-            <option value={"metric_score_ascending"}>
-              Metrics Score (Ascending)
-            </option>
-            <option value={"metric_score_descending"}>
-              Metrics Score (Descending)
-            </option>
-          </select>
-          <img
-            src="/projectBoard_images/filter.png"
-            style={{
-              width: "40px",
-              height: "40px",
-              border: "1px solid black",
-              borderRadius: "0px 5px 5px 0px",
-              marginRight: "20px",
-            }}
-            alt="filter"
-          />
-
-          {/* Search Bar */}
-          <form
-            onSubmit={(e) => e.preventDefault()}
-            style={{
-              width: "950vh",
-              height: "40px",
-              backgroundColor: "white",
-              display: "flex",
-              alignItems: "center",
-              borderRadius: "60px",
-              padding: "10px 20px",
-              justifyContent: "right",
-            }}
-          >
-            <input
-              type="text"
-              placeholder="Enter Idea Name"
-              name="q"
-              style={{
-                background: "transparent",
-                flex: "1",
-                border: "0",
-                outline: "none",
-                padding: "24px 20px",
-                fontSize: "20px",
-                color: "black",
-              }}
-            />
-            <button type="submit" style={{ paddingRight: "10px" }}>
-              <img
-                src="/projectBoard_images/search.png"
-                style={{ width: "33px", height: "25px", verticalAlign: "middle", paddingRight: "5px" }}
-                alt="search"
-              />
-              Search
-            </button>
-          </form>
-        </div>
-
-        {/* Idea cards */}
-        {filteredIdeas.map((idea) => (
+          {/* Sidebar */}
           <div
-            key={idea.id}
             style={{
-              backgroundColor: "#6a4026",
-              borderRadius: "8px",
-              padding: "16px",
-              boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-              position: "relative",
+              width: "300px",
+              //backgroundColor: "#f1dc99", 
+              padding: "20px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+              minHeight: "100vh",
             }}
           >
-            <h3
-              style={{
-                color: "#e8c352",
-                fontSize: "14px",
-                fontWeight: "500",
-                textAlign: "center",
-                marginBottom: "12px",
-                margin: "0 0 12px 0",
-              }}
-            >
-              {idea.title}
-            </h3>
+            {/* Header */}
+            <div>
+              <h1
+                style={{
+                  fontSize: "18px",
+                  fontWeight: "bold",
+                  color: "#6a4026",
+                  marginBottom: "16px",
+                  margin: "0 0 16px 0",
+                }}
+              >
+                SEEDS IDEA BOARD:
+              </h1>
 
-            <div
-              style={{
-                backgroundColor: "white",
-                borderRadius: "6px",
-                padding: "16px",
-                minHeight: "100px",
-                color: "#6a4026",
-                fontSize: "13px",
-                lineHeight: "1.4",
-                display: "flex",
-                gap: "16px",
-              }}
-            >
-              {/* Left */}
-              <div style={{ flex: "1" }}>
-                {/* Description */}
-                <div style={{ marginBottom: "12px" }}>
-                  <strong>Description:</strong>
-                  <div style={{ marginTop: "2px" }}>{(idea.content ?? "").toString()}</div>
+              {/* Admin panel button */}
+              <button
+                onClick={() => navigate("/admin")}
+                style={{
+                  width: "100%",
+                  backgroundColor: "#6a951f", //admin button
+                  color: "white",
+                  padding: "8px 12px",
+                  borderRadius: "6px",
+                  border: "none",
+                  fontSize: "12px",
+                  fontWeight: "bold",
+                  marginBottom: "16px",
+                  cursor: "pointer",
+                }}
+              >
+                ADMIN PANEL
+              </button>
+
+              {/* Board summary (NEW) */}
+              {boardError && (
+                <div style={{ marginTop: 4 }}>
+                  <Chip color="error" size="small" label="Board load error" />
                 </div>
-
-                {/* Priority */}
-                <div style={{ marginBottom: "12px" }}>
-                  <strong>Priority:</strong>
-                  <div
-                    style={{
-                      marginTop: "2px",
-                      padding: "2px 6px",
-                      backgroundColor:
-                        idea.priority === "high"
-                          ? "#ffebee"
-                          : idea.priority === "medium"
-                            ? "#fff3e0"
-                            : "#e8f5e8",
-                      borderRadius: "3px",
-                      display: "inline-block",
-                      fontSize: "11px",
-                      textTransform: "capitalize",
-                    }}
-                  >
-                    {idea.priority || "Low"}
+              )}
+              {board && (
+                <div style={{ marginTop: 8, fontSize: 12, color: "#6a4026" }}>
+                  <div>
+                    <strong>Project:</strong>{" "}
+                    {board.projectName || "Project Board"}
+                  </div>
+                  <div>
+                    <strong>Admins:</strong> {board.admins?.length ?? 0} •{" "}
+                    <strong>Users:</strong> {board.users?.length ?? 0}
                   </div>
                 </div>
+              )}
+            </div>
 
-                {/* Creator */}
-                <div style={{ marginBottom: "12px" }}>
-                  <strong>Creator:</strong>
-                  <div style={{ marginTop: "2px", fontSize: "11px" }}>
-                    {idea.creator || "Unknown"}
-                  </div>
-                </div>
+            {/* Project boards */}
+            <div>
+              <h3
+                style={{
+                  fontSize: "14px",
+                  fontWeight: "bold",
+                  color: "#6a4026",
+                  marginBottom: "8px",
+                  margin: "0 0 8px 0",
+                }}
+              >
+                PROJECT BOARDS:
+              </h3>
 
-                {/* Metrics */}
-                {[
-                  ["Metric 1", idea.metric1],
-                  ["Metric 2", idea.metric2],
-                  ["Metric 3", idea.metric3],
-                  ["Metric 4", idea.metric4],
-                  ["Metric 5", idea.metric5],
-                  ["Metric 6", idea.metric6],
-                  ["Metric 7", idea.metric7],
-                  ["Metric 8", idea.metric8],
-                ].map(([label, value]) => (
-                  <div key={label} style={{ marginBottom: "12px" }}>
-                    <strong>{label}:</strong>
-                    <div style={{ marginTop: "2px", fontSize: "11px" }}>
-                      {value || "Not set"}
-                    </div>
-                  </div>
-                ))}
+              {projects.map((project) => (
+                <button
+                  key={project.id}
+                  onClick={() => setSelectedProject(project.id)}
+                  style={{
+                    width: "100%",
+                    backgroundColor:
+                      selectedProject === project.id ? "#6a951f" : "#f1dc99",
+                    color: selectedProject === project.id ? "white" : "#6a4026",
+                    padding: "8px 12px",
+                    borderRadius: "6px",
+                    border:
+                      selectedProject === project.id
+                        ? "none"
+                        : "1px solid #d4af37",
+                    fontSize: "12px",
+                    fontWeight: "bold",
+                    marginBottom: "4px",
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                >
+                  {project.name}
+                </button>
+              ))}
+            </div>
+
+            {/* Bottom section */}
+            <div style={{ marginTop: "auto" }}>
+              <button
+                style={{
+                  width: "100%",
+                  backgroundColor: "#91b472",
+                  color: "white",
+                  padding: "8px 12px",
+                  borderRadius: "6px",
+                  border: "none",
+                  fontSize: "12px",
+                  fontWeight: "bold",
+                  marginBottom: "8px",
+                  cursor: "pointer",
+                }}
+              >
+                TIME TRACKING
+              </button>
+
+              <button
+                style={{
+                  width: "100%",
+                  backgroundColor: "#91b472",
+                  color: "white",
+                  padding: "8px 12px",
+                  borderRadius: "6px",
+                  border: "none",
+                  fontSize: "12px",
+                  fontWeight: "bold",
+                  marginBottom: "16px",
+                  cursor: "pointer",
+                }}
+              >
+                DRAFTS
+              </button>
+
+              <Button
+                variant="contained"
+                color="primary"
+                style={{
+                  backgroundColor: "#6a951f",
+                  width: "100%",
+                  fontSize: "12px",
+                  padding: "8px 12px",
+                }}
+                onClick={handleOpenTestPopup}
+              >
+                CREATE IDEA
+              </Button>
+            </div>
+          </div>
+
+          {/* Main area */}
+          <div
+            style={{
+              flex: 1,
+              //backgroundColor: "#ffffff",
+              padding: "20px 60px 20px 20px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+              maxWidth: "calc(100vw - 300px)",
+            }}
+          >
+            {/* Filter & Search */}
+            <div style={{ display: "flex" }}>
+              <select
+                style={{
+                  width: "120px",
+                  height: "40px",
+                  borderRadius: "5px 0px 0px 5px",
+                  textAlign: "center",
+                  border: "1px solid black",
+                }}
+              >
+                <option> </option>
+                <option value={"name_ascending"}>Name (Ascending)</option>
+                <option value={"name_descending"}>Name (Descending)</option>
+                <option value={"metric_score_ascending"}>
+                  Metrics Score (Ascending)
+                </option>
+                <option value={"metric_score_descending"}>
+                  Metrics Score (Descending)
+                </option>
+              </select>
+              <img
+                src="/projectBoard_images/filter.png"
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  border: "1px solid black",
+                  borderRadius: "0px 5px 5px 0px",
+                  marginRight: "20px",
+                }}
+                alt="filter"
+              />
+
+              {/* Search Bar */}
+              <form
+                onSubmit={(e) => e.preventDefault()}
+                style={{
+                  width: "950vh",
+                  height: "40px",
+                  backgroundColor: "white",
+                  display: "flex",
+                  alignItems: "center",
+                  borderRadius: "60px",
+                  padding: "10px 20px",
+                  justifyContent: "right",
+                  border: "1px solid black",
+                }}
+              >
+                <input
+                  type="text"
+                  placeholder="Enter Idea Name"
+                  name="q"
+                  style={{
+                    background: "transparent",
+                    flex: "1",
+                    border: "0",
+                    outline: "none",
+                    padding: "24px 20px",
+                    fontSize: "20px",
+                    color: "black",
+                  }}
+                />
+                <button type="submit" style={{ paddingRight: "10px" }}>
+                  <img
+                    src="/projectBoard_images/search.png"
+                    style={{ width: "33px", height: "25px", verticalAlign: "middle", paddingRight: "5px" }}
+                    alt="search"
+                  />
+                  Search
+                </button>
+              </form>
+            </div>
+
+            {/* Idea cards */}
+            {filteredIdeas.map((idea) => (
+              <div
+                key={idea.id}
+                style={{
+                  backgroundColor: "#6a4026",
+                  borderRadius: "8px",
+                  padding: "16px",
+                  boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                  position: "relative",
+                }}
+              >
+                <h3
+                  style={{
+                    color: "#e8c352",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    textAlign: "center",
+                    marginBottom: "12px",
+                    margin: "0 0 12px 0",
+                  }}
+                >
+                  {idea.title}
+                </h3>
 
                 <div
                   style={{
+                    backgroundColor: "white",
+                    borderRadius: "6px",
+                    padding: "16px",
+                    minHeight: "100px",
+                    color: "#6a4026",
+                    fontSize: "13px",
+                    lineHeight: "1.4",
                     display: "flex",
-                    justifyContent: "flex-start",
-                    gap: "6px",
+                    gap: "16px",
                   }}
                 >
-                  <button
-                    onClick={() => handleEditIdea(idea)}
-                    style={{
-                      backgroundColor: "#e8c352",
-                      color: "#6a4026",
-                      border: "none",
-                      borderRadius: "3px",
-                      padding: "4px 8px",
-                      fontSize: "10px",
-                      fontWeight: "bold",
-                      cursor: "pointer",
-                      boxShadow: "0 1px 2px rgba(0, 0, 0, 0.1)",
-                    }}
-                  >
-                    Edit
-                  </button>
+                  {/* Left */}
+                  <div style={{ flex: "1" }}>
+                    {/* Description */}
+                    <div style={{ marginBottom: "12px" }}>
+                      <strong>Description:</strong>
+                      <div style={{ marginTop: "2px" }}>{(idea.content ?? "").toString()}</div>
+                    </div>
 
-                  <button
-                    onClick={() => handleDeleteIdea(idea.id)}
+                    {/* Priority */}
+                    <div style={{ marginBottom: "12px" }}>
+                      <strong>Priority:</strong>
+                      <div
+                        style={{
+                          marginTop: "2px",
+                          padding: "2px 6px",
+                          backgroundColor:
+                            idea.priority === "high"
+                              ? "#ffebee"
+                              : idea.priority === "medium"
+                                ? "#fff3e0"
+                                : "#e8f5e8",
+                          borderRadius: "3px",
+                          display: "inline-block",
+                          fontSize: "11px",
+                          textTransform: "capitalize",
+                        }}
+                      >
+                        {idea.priority || "Low"}
+                      </div>
+                    </div>
+
+                    {/* Creator */}
+                    <div style={{ marginBottom: "12px" }}>
+                      <strong>Creator:</strong>
+                      <div style={{ marginTop: "2px", fontSize: "11px" }}>
+                        {idea.creator || "Unknown"}
+                      </div>
+                    </div>
+
+                    {/* Metrics */}
+                    {[
+                      ["Metric 1", idea.metric1],
+                      ["Metric 2", idea.metric2],
+                      ["Metric 3", idea.metric3],
+                      ["Metric 4", idea.metric4],
+                      ["Metric 5", idea.metric5],
+                      ["Metric 6", idea.metric6],
+                      ["Metric 7", idea.metric7],
+                      ["Metric 8", idea.metric8],
+                    ].map(([label, value]) => (
+                      <div key={label} style={{ marginBottom: "12px" }}>
+                        <strong>{label}:</strong>
+                        <div style={{ marginTop: "2px", fontSize: "11px" }}>
+                          {value || "Not set"}
+                        </div>
+                      </div>
+                    ))}
+
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "flex-start",
+                        gap: "6px",
+                      }}
+                    >
+                      <button
+                        onClick={() => handleEditIdea(idea)}
+                        style={{
+                          backgroundColor: "#e8c352",
+                          color: "#6a4026",
+                          border: "none",
+                          borderRadius: "3px",
+                          padding: "4px 8px",
+                          fontSize: "10px",
+                          fontWeight: "bold",
+                          cursor: "pointer",
+                          boxShadow: "0 1px 2px rgba(0, 0, 0, 0.1)",
+                        }}
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteIdea(idea.id)}
+                        style={{
+                          backgroundColor: "#dc3545",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "3px",
+                          padding: "8px 12px",
+                          fontSize: "10px",
+                          fontWeight: "bold",
+                          cursor: "pointer",
+                          boxShadow: "0 1px 2px rgba(0, 0, 0, 0.1)",
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Right placeholder */}
+                  <div
                     style={{
-                      backgroundColor: "#dc3545",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "3px",
-                      padding: "8px 12px",
-                      fontSize: "10px",
-                      fontWeight: "bold",
-                      cursor: "pointer",
-                      boxShadow: "0 1px 2px rgba(0, 0, 0, 0.1)",
+                      flex: "0 0 200px",
+                      backgroundColor: "#f8f9fa",
+                      borderRadius: "4px",
+                      padding: "12px",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      border: "1px dashed #dee2e6",
+                      minHeight: "120px",
                     }}
                   >
-                    Delete
-                  </button>
+                    <div
+                      style={{ textAlign: "center", color: "#6c757d", fontSize: "10px" }}
+                    >
+                      <div>
+                        <strong>Media Section</strong>
+                      </div>
+                      <div style={{ marginTop: "2px" }}>
+                        Images, files, or attachments will display here
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
+            ))}
+          </div>
 
-              {/* Right placeholder */}
-              <div
-                style={{
-                  flex: "0 0 200px",
-                  backgroundColor: "#f8f9fa",
-                  borderRadius: "4px",
-                  padding: "12px",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  border: "1px dashed #dee2e6",
-                  minHeight: "120px",
+          {/* Dialog for popups */}
+          <Dialog open={openTestPopup} onClose={handleCloseTestPopup} maxWidth="md" fullWidth>
+            <DialogTitle>
+              {editingIdea ? "Edit Idea" : "Create New Idea"}
+              <IconButton
+                aria-label="close"
+                onClick={handleCloseTestPopup}
+                sx={{ position: "absolute", right: 8, top: 8 }}
+              >
+                <CloseIcon />
+              </IconButton>
+            </DialogTitle>
+
+            <DialogContent dividers>
+              <IdeaEdit setFormData={setIdeaFormData} user={user} />
+            </DialogContent>
+
+            <DialogActions>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => {
+                  const cleanDescription = (ideaFormData.description || "").trim();
+                  const cleanTitle = (ideaFormData.title || "").trim();
+
+                  if (!cleanDescription) {
+                    alert("Please enter a description");
+                    return;
+                  }
+                  if (!cleanTitle) {
+                    alert("Please enter a title");
+                    return;
+                  }
+
+                  const currentProjectGroup = projects[selectedProject]?.groupName;
+
+                  // Data to be used in backend
+                  const seedData = {
+                    title: cleanTitle,
+                    creatorName: user?._id || null,
+                    creatorEmail: user?.email || "",
+                    group: currentProjectGroup || `Project ${selectedProject}`,
+                    metric1: ideaFormData.metric1 || "",
+                    metric2: ideaFormData.metric2 || "",
+                    metric3: ideaFormData.metric3 || "",
+                    metric4: ideaFormData.metric4 || "",
+                    metric5: ideaFormData.metric5 || "",
+                    metric6: ideaFormData.metric6 || "",
+                    metric7: ideaFormData.metric7 || "",
+                    metric8: ideaFormData.metric8 || "",
+                    priority: (ideaFormData.priority || "low").toLowerCase(),
+                    // Single description field; append METRIC3 tag if provided
+                    description:
+                      cleanDescription +
+                      (ideaFormData.metric3 ? `||METRIC3:${ideaFormData.metric3}` : ""),
+                  };
+
+                  if (editingIdea) {
+                    const updateData = { ...seedData, _id: editingIdea.id };
+                    dispatch(modifySeed(updateData));
+                    dispatch(updateSeeds());
+                  } else {
+                    handleCreateSeed(seedData);
+                  }
+
+                  handleCloseTestPopup();
                 }}
               >
-                <div
-                  style={{ textAlign: "center", color: "#6c757d", fontSize: "10px" }}
-                >
-                  <div>
-                    <strong>Media Section</strong>
-                  </div>
-                  <div style={{ marginTop: "2px" }}>
-                    Images, files, or attachments will display here
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
+                {editingIdea ? "Update Idea" : "Save & Exit"}
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </div>
       </div>
-
-      {/* Dialog for popups */}
-      <Dialog open={openTestPopup} onClose={handleCloseTestPopup} maxWidth="md" fullWidth>
-        <DialogTitle>
-          {editingIdea ? "Edit Idea" : "Create New Idea"}
-          <IconButton
-            aria-label="close"
-            onClick={handleCloseTestPopup}
-            sx={{ position: "absolute", right: 8, top: 8 }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-
-        <DialogContent dividers>
-          <IdeaEdit setFormData={setIdeaFormData} user={user} />
-        </DialogContent>
-
-        <DialogActions>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => {
-              const cleanDescription = (ideaFormData.description || "").trim();
-              const cleanTitle = (ideaFormData.title || "").trim();
-
-              if (!cleanDescription) {
-                alert("Please enter a description");
-                return;
-              }
-              if (!cleanTitle) {
-                alert("Please enter a title");
-                return;
-              }
-
-              const currentProjectGroup = projects[selectedProject]?.groupName;
-
-              // Data to be used in backend
-              const seedData = {
-                title: cleanTitle,
-                creatorName: user?._id || null,
-                creatorEmail: user?.email || "",
-                group: currentProjectGroup || `Project ${selectedProject}`,
-                metric1: ideaFormData.metric1 || "",
-                metric2: ideaFormData.metric2 || "",
-                metric3: ideaFormData.metric3 || "",
-                metric4: ideaFormData.metric4 || "",
-                metric5: ideaFormData.metric5 || "",
-                metric6: ideaFormData.metric6 || "",
-                metric7: ideaFormData.metric7 || "",
-                metric8: ideaFormData.metric8 || "",
-                priority: (ideaFormData.priority || "low").toLowerCase(),
-                // Single description field; append METRIC3 tag if provided
-                description:
-                  cleanDescription +
-                  (ideaFormData.metric3 ? `||METRIC3:${ideaFormData.metric3}` : ""),
-              };
-
-              if (editingIdea) {
-                const updateData = { ...seedData, _id: editingIdea.id };
-                dispatch(modifySeed(updateData));
-                dispatch(updateSeeds());
-              } else {
-                handleCreateSeed(seedData);
-              }
-
-              handleCloseTestPopup();
-            }}
-          >
-            {editingIdea ? "Update Idea" : "Save & Exit"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </div>
+    </>
   );
 }
 
