@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { FaCheck, FaEdit, FaTimes } from "react-icons/fa";
 import authService from "../../features/auth/authService";
+import TopBar from '../../components/Navigation/NavBar';
 import {
   getBoards,
   createBoard,
@@ -424,104 +425,107 @@ const AdminPanel = () => {
   };
 
   return (
-    <div style={{ backgroundColor: "#F2C776", padding: "100px", minHeight: "100vh" }}>
-      {/* top of page dropdown bar */}
-      <div style={topBarStyle}>
-        <div style={{ fontWeight: 700, color: "#523629" }}>Admin Panel</div>
-        <label style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <span style={{ color: "#523629", fontWeight: 600 }}>Select Project Board:</span>
-          <select
-            aria-label="Select Project Board"
-            style={selectStyle}
-            value={selectedBoardId}
-            onChange={(e) => setSelectedBoardId(e.target.value)}
-          >
-            <option value="">-- Select a board --</option>
-            {boards.map((board) => (
-              <option key={board._id} value={board._id}>
-                {board.projectName}
-              </option>
-            ))}
-          </select>
+    <>
+      <TopBar />
+      <div style={{ backgroundColor: "#F2C776", padding: "100px", minHeight: "100vh" }}>
+        {/* top of page dropdown bar */}
+        <div style={topBarStyle}>
+          <div style={{ fontWeight: 700, color: "#523629" }}>Admin Panel</div>
+          <label style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <span style={{ color: "#523629", fontWeight: 600 }}>Select Project Board:</span>
+            <select
+              aria-label="Select Project Board"
+              style={selectStyle}
+              value={selectedBoardId}
+              onChange={(e) => setSelectedBoardId(e.target.value)}
+            >
+              <option value="">-- Select a board --</option>
+              {boards.map((board) => (
+                <option key={board._id} value={board._id}>
+                  {board.projectName}
+                </option>
+              ))}
+            </select>
 
-        </label>
+          </label>
+        </div>
+
+        {/* Brown box */}
+        <div style={{ backgroundColor: "#523629", padding: "20px", borderRadius: "10px", marginTop: "16px" }}>
+          <table style={tableStyle}>
+            <tbody>
+              <tr>
+                <td style={{ ...tdStyle, width: "20%" }}>
+                  <button
+                    onClick={() => setActiveSection("ideas")}
+                    style={{
+                      display: "block",
+                      marginBottom: "10px",
+                      padding: "10px",
+                      width: "100%",
+                      border: "none",
+                      borderRadius: "50px",
+                      backgroundColor: activeSection === "ideas" ? "#94B570" : "#999",
+                      color: "white",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Manage Ideas
+                  </button>
+                  <button
+                    onClick={() => setActiveSection("users")}
+                    style={{
+                      display: "block",
+                      padding: "10px",
+                      width: "100%",
+                      border: "none",
+                      borderRadius: "50px",
+                      backgroundColor: activeSection === "users" ? "#94B570" : "#999",
+                      color: "white",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Manage Users
+                  </button>
+                </td>
+                <td style={{ ...tdStyle, width: "80%" }}>
+                  {boardsError ? (
+                    <div style={{ color: "white" }}>Error: {boardsError}</div>
+                  ) : (
+                    renderContent()
+                  )}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Create board button */}
+        <button style={floatingButtonStyle} aria-label="Create Project Board" onClick={handleOpenPopup}>
+          Create Project Board
+        </button>
+
+        {/* Create/Edit dialog */}
+        <Dialog open={openPopup} onClose={handleClosePopup} maxWidth="md" fullWidth>
+          <DialogTitle>
+            {editingBoard ? "Edit Board" : "Create New Board"}
+            <IconButton aria-label="close" onClick={handleClosePopup} sx={{ position: "absolute", right: 8, top: 8 }}>
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+
+          <DialogContent dividers>
+            <BoardCreate setFormData={setBoardFormData} user={user} />
+          </DialogContent>
+
+          <DialogActions>
+            <Button variant="contained" color="primary" onClick={handleSaveFromDialog}>
+              {editingBoard ? "Update Board" : "Save & Exit"}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </div>
-
-      {/* Brown box */}
-      <div style={{ backgroundColor: "#523629", padding: "20px", borderRadius: "10px", marginTop: "16px" }}>
-        <table style={tableStyle}>
-          <tbody>
-            <tr>
-              <td style={{ ...tdStyle, width: "20%" }}>
-                <button
-                  onClick={() => setActiveSection("ideas")}
-                  style={{
-                    display: "block",
-                    marginBottom: "10px",
-                    padding: "10px",
-                    width: "100%",
-                    border: "none",
-                    borderRadius: "50px",
-                    backgroundColor: activeSection === "ideas" ? "#94B570" : "#999",
-                    color: "white",
-                    cursor: "pointer",
-                  }}
-                >
-                  Manage Ideas
-                </button>
-                <button
-                  onClick={() => setActiveSection("users")}
-                  style={{
-                    display: "block",
-                    padding: "10px",
-                    width: "100%",
-                    border: "none",
-                    borderRadius: "50px",
-                    backgroundColor: activeSection === "users" ? "#94B570" : "#999",
-                    color: "white",
-                    cursor: "pointer",
-                  }}
-                >
-                  Manage Users
-                </button>
-              </td>
-              <td style={{ ...tdStyle, width: "80%" }}>
-                {boardsError ? (
-                  <div style={{ color: "white" }}>Error: {boardsError}</div>
-                ) : (
-                  renderContent()
-                )}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      {/* Create board button */}
-      <button style={floatingButtonStyle} aria-label="Create Project Board" onClick={handleOpenPopup}>
-        Create Project Board
-      </button>
-
-      {/* Create/Edit dialog */}
-      <Dialog open={openPopup} onClose={handleClosePopup} maxWidth="md" fullWidth>
-        <DialogTitle>
-          {editingBoard ? "Edit Board" : "Create New Board"}
-          <IconButton aria-label="close" onClick={handleClosePopup} sx={{ position: "absolute", right: 8, top: 8 }}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-
-        <DialogContent dividers>
-          <BoardCreate setFormData={setBoardFormData} user={user} />
-        </DialogContent>
-
-        <DialogActions>
-          <Button variant="contained" color="primary" onClick={handleSaveFromDialog}>
-            {editingBoard ? "Update Board" : "Save & Exit"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </div>
+    </>
   );
 };
 
