@@ -15,7 +15,7 @@ const seedSchema = new Schema({
   metric6: { type: String },
   metric7: { type: String },
   metric8: { type: String },
-  metricScore: { type: Number, default: 0 }, 
+  metricScore: { type: Number, default: 0 },
   priority: { type: String, enum: ["low", "medium", "high"] },
   status: { type: String },
   isFavorite: { type: Boolean, default: false },
@@ -26,6 +26,11 @@ const seedSchema = new Schema({
     createdAt: { type: Date, default: Date.now }
   }]
 });
+
+seedSchema.index(
+  { title: "text", description: "text" },
+  { name: "seed_text_index", weights: { title: 5, description: 1 } }
+);
 
 const Seed = mongoose.model("Seed", seedSchema);
 

@@ -1,61 +1,63 @@
 /*
-mergesort
-*/
+ * Merge sort strategy for sorting seeds by computed metric score.
+ * Asc/Desc supported via constructor option.
+ */
+const Calculate = require("./calculate");
+const { calculateMetricScore } = require("../metric/metric");
 
-class metricSort extends calculate {
-    merge(array, left, middle, right) {
-        let l1 = middle - left + 1;
-        let l2 = right - middle;
+class MetricSort extends Calculate {
+  /**
+   * @param {Object} board - board document (for weights)
+   * @param {'asc'|'desc'} order
+   * @param {Object} [metricOpts] - optional { mode, scale } passed to calculateMetricScore
+   */
+  constructor(board, order = "asc", metricOpts = { mode: "average", scale: 100 }) {
+    super();
+    this.board = board;
+    this.order = order === "desc" ? "desc" : "asc";
+    this.metricOpts = metricOpts;
+  }
 
-        let array1 = new Array(l1);
-        let array2 = new Array(l2);
+  _score(seed) {
+    // Uses your metric function; safe if metrics are strings/numbers
+    return calculateMetricScore(seed, this.board, this.metricOpts) ?? 0;
+  }
 
-        for (let i = 0; i < l1; ++i) {
-            array1[i] = array[left + i];
-        }
+  _cmp(a, b) {
+    const sa = this._score(a);
+    const sb = this._score(b);
+    if (sa === sb) return 0;
+    return this.order === "asc" ? (sa < sb ? -1 : 1) : (sa > sb ? -1 : 1);
+  }
 
-        for (let i = 0; i < l2; ++i) {
-            array2[i] = array[middle + 1 + i];
-        }
-
-        let i = 0, j = 0, k = left;
-
-        while (i < l1 && j < l2) {
-            if (array1[i] < array2[j]) {
-                aray[k] = array1[i];
-                i++;
-            } else {
-                array[k] = array2[j];
-                j++;
-            }
-            k++;
-        }
-
-        while (i < l2) {
-            array[k] = array1[i];
-            i++;
-            k++;
-        }
-
-        while (j < l2) {
-            array[k] = array2[j];
-            j++;
-            k++;
-        }
+  _merge(left, right) {
+    const out = [];
+    let i = 0, j = 0;
+    while (i < left.length && j < right.length) {
+      if (this._cmp(left[i], right[j]) <= 0) {
+        out.push(left[i++]);
+      } else {
+        out.push(right[j++]);
+      }
     }
+    while (i < left.length) out.push(left[i++]);
+    while (j < right.length) out.push(right[j++]);
+    return out;
+  }
 
-    calculate(array, left, right) {
-        if (left >= right) {
-            return;
-        }
+  _mergeSort(arr) {
+    const n = arr.length;
+    if (n <= 1) return arr;
+    const mid = Math.floor(n / 2);
+    const left = this._mergeSort(arr.slice(0, mid));
+    const right = this._mergeSort(arr.slice(mid));
+    return this._merge(left, right);
+  }
 
-        let middle = left + parseInt((right - left) / 2);
-
-        this.calculate(array, left, middle);
-        this.calculate(array, middle + 1, right);
-
-        this.merge(array, left, middle, right);
-    }
+  calculate(array) {
+    // Return a sorted copy; do not mutate the original input array
+    return this._mergeSort(Array.isArray(array) ? [...array] : []);
+  }
 }
 
-//calculate(array, 0, array.length -1)
+module.exports = MetricSort;
