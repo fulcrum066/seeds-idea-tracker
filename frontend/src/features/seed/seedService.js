@@ -109,11 +109,85 @@ const deleteSeedById = async (seedId, token) => {
   }
 };
 
+// Function to toggle favorite status
+const toggleFavorite = async (seedId, token) => {
+  const config = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+
+  try {
+    const response = await axios.put(
+      `${API_URL}/api/seeds/seed/${seedId}/favorite`,
+      {},
+      config
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error toggling favorite:",
+      error.response?.data || error.message
+    );
+    throw error;
+  }
+};
+
+// Function to add comment to seed
+const addComment = async (seedId, commentData, token) => {
+  const config = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+
+  try {
+    const response = await axios.post(
+      `${API_URL}/api/seeds/seed/${seedId}/comment`,
+      commentData,
+      config
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error adding comment:",
+      error.response?.data || error.message
+    );
+    throw error;
+  }
+};
+
+// Function to delete comment from seed
+const deleteComment = async (seedId, commentId, token) => {
+  const config = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+
+  try {
+    const response = await axios.delete(
+      `${API_URL}/api/seeds/seed/${seedId}/comment/${commentId}`,
+      config
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error deleting comment:",
+      error.response?.data || error.message
+    );
+    throw error;
+  }
+};
+
 const seedService = {
   createSeed,
   getSeeds,
   updateSeedById,
   deleteSeedById,
+  toggleFavorite,
+  addComment,
+  deleteComment,
 };
 
 export default seedService;

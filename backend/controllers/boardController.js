@@ -5,20 +5,28 @@ const Board = require("../models/boardModel");
 //--------------------------------------GETTERS----------------------------------
 //-----------------------------------------------------------------------------------
 
-// @desc    Get all project boards
+// @desc    Get all project boards (with populated seeds)
 // @route   GET /api/board/board
 // @access  Private
 const getBoard = asyncHandler(async (req, res) => {
-    const board = await Board.find({});
-    res.status(200).json(board);
+    try {
+        const boards = await Board.find({})
+            .populate("seeds")   // populate seeds with full seed documents
+            .populate("admins", "name email")  // optional: only return name/email for admins
+            .populate("users", "name email");  // optional: only return name/email for users
+
+        res.status(200).json(boards);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 });
 
 //-----------------------------------------------------------------------------------
 //--------------------------------------CREATORS----------------------------------
 //-----------------------------------------------------------------------------------
 
-// @desc    Create a new seed
-// @route   POST /api/seeds/seed
+// @desc    Create a new board
+// @route   POST /api/board/board
 // @access  Private
 const createBoard = asyncHandler(async (req, res) => {
     const {
@@ -35,15 +43,9 @@ const createBoard = asyncHandler(async (req, res) => {
         weight7,
     } = req.body;
 
-    // Validate required fields
-    //   if (!description || !creatorName) {
-    //     res.status(400);
-    //     throw new Error("Description and creatorName are required");
-    //   }
-
     const newBoard = new Board({
         projectName,
-        seeds,
+        seeds,   // should be an array of seed IDs
         admins,
         users,
         weight1,
@@ -57,7 +59,9 @@ const createBoard = asyncHandler(async (req, res) => {
 
     try {
         const savedBoard = await newBoard.save();
-        res.status(201).json(savedBoard);
+        // return the board with populated seeds right after creation
+        const populatedBoard = await Board.findById(savedBoard._id).populate("seeds");
+        res.status(201).json(populatedBoard);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -67,8 +71,8 @@ const createBoard = asyncHandler(async (req, res) => {
 //--------------------------------------UPDATERS----------------------------------
 //-----------------------------------------------------------------------------------
 
-// @desc    Update a seed by ID
-// @route   PUT /api/seeds/seed/:id
+// @desc    Update a board by ID
+// @route   PUT /api/board/board/:id
 // @access  Private
 const updateBoardById = asyncHandler(async (req, res) => {
     const boardId = req.params.id;
@@ -90,14 +94,14 @@ const updateBoardById = asyncHandler(async (req, res) => {
 
     if (!existingBoard) {
         res.status(404);
-        throw new Error("board not found");
+        throw new Error("Board not found");
     }
 
     const updatedBoard = await Board.findByIdAndUpdate(
         boardId,
         {
             projectName,
-            seeds,
+            seeds,   // still just IDs, will populate below
             admins,
             users,
             weight1,
@@ -109,7 +113,7 @@ const updateBoardById = asyncHandler(async (req, res) => {
             weight7,
         },
         { new: true, runValidators: true }
-    );
+    ).populate("seeds");
 
     if (!updatedBoard) {
         res.status(404);
@@ -123,8 +127,8 @@ const updateBoardById = asyncHandler(async (req, res) => {
 //--------------------------------------DELETERS----------------------------------
 //-----------------------------------------------------------------------------------
 
-// @desc    Delete a seed by ID
-// @route   DELETE /api/seeds/seed/:id
+// @desc    Delete a board by ID
+// @route   DELETE /api/board/board/:id
 // @access  Private
 const deleteBoardById = asyncHandler(async (req, res) => {
     const boardId = req.params.id;

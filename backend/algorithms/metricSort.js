@@ -1,11 +1,5 @@
 /*
-partition each part of the list as follows:
-    entries less than the first entry
-    the partition value
-    entries greater than the first entry
-repeat
-    partition each partition
-until the list is sorted
+mergesort
 */
 
 class metricSort extends calculate {
@@ -13,7 +7,6 @@ class metricSort extends calculate {
         let l1 = middle - left + 1;
         let l2 = right - middle;
 
-        //New sub arrays
         let array1 = new Array(l1);
         let array2 = new Array(l2);
 
