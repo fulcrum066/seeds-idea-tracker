@@ -5,12 +5,11 @@ import { FaCheck, FaEdit, FaTimes } from "react-icons/fa";
 import authService from "../../features/auth/authService";
 import TopBar from "../../components/Navigation/NavBar";
 import { getBoards, createBoard, updateBoard } from "../../features/board/boardService";
-import { getUser, updateUser } from "../../features/auth/authSlice";
 import { Button, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import BoardCreate from "../../components/BoardCreate/BoardCreate";
 
-// ---------- Style constants ----------
+// ---------- Style ----------
 const styles = {
   container: { backgroundColor: "#F2C776", padding: "100px", minHeight: "100vh" },
   topBar: {
@@ -103,7 +102,7 @@ const AdminPanel = () => {
     const fetchUsers = async () => {
       try {
         setUsersLoading(true);
-        const list = await authService.getUser(token);
+        const list = await authService.getUser(token); // returns ALL users
         setUsers(Array.isArray(list) ? list : []);
       } catch (err) {
         setUsersError(err?.response?.data?.message || err.message || "Failed to load users");
@@ -118,21 +117,46 @@ const AdminPanel = () => {
   const handleUserBoardUpdate = async (boardId, action) => {
     if (!emailInput) return alert("Please enter an email.");
     try {
-      const userData = await authService.getUserByEmail(emailInput.trim(), token);
+      const email = emailInput.trim();
+      const userData = await authService.getUserByEmail(email, token);
       if (!userData?._id) return alert("User not found");
-      const userId = userData._id;
-      const board = boards.find((b) => b._id === boardId);
+
+      const userId = String(userData._id);
+      const board = boards.find((b) => String(b._id) === String(boardId));
       if (!board) return alert("Board not found");
 
-      const updatedUsers =
-        action === "add"
-          ? board.users?.includes(userId)
-            ? (alert("User already in board"), board.users)
-            : [...(board.users || []), userId]
-          : (board.users || []).filter((id) => id !== userId);
+      // Normalize board.users to IDs
+      const currentUserIds = (board.users || []).map((u) =>
+        String(typeof u === "string" ? u : u._id)
+      );
 
-      await updateBoard(token, boardId, { ...board, users: updatedUsers });
-      await updateUser(token, userId, { ...userData, boards: action === "add" ? [...(userData.boards || []), boardId] : (userData.boards || []).filter((id) => id !== boardId) });
+      let updatedUserIds;
+      if (action === "add") {
+        if (currentUserIds.includes(userId)) {
+          alert("User already in board");
+          return;
+        }
+        updatedUserIds = [...currentUserIds, userId];
+      } else if (action === "remove") {
+        updatedUserIds = currentUserIds.filter((id) => id !== userId);
+      } else {
+        return alert("Unknown action");
+      }
+
+      // 1) Update the board with pure IDs
+      await updateBoard(token, boardId, { ...board, users: updatedUserIds });
+
+      // 2) Update the user's boards as IDs
+      const currentBoards = (userData.boards || []).map((id) => String(id));
+      const updatedBoards =
+        action === "add"
+          ? [...new Set([...currentBoards, String(boardId)])]
+          : currentBoards.filter((id) => String(id) !== String(boardId));
+
+      await authService.updateUser(
+        { ...userData, boards: updatedBoards, _id: userId },
+        token
+      );
 
       await refreshBoards();
       alert(`User ${action === "add" ? "added to" : "removed from"} board!`);
@@ -147,15 +171,15 @@ const AdminPanel = () => {
     setBoardFormData(
       board
         ? {
-          projectName: board.name || "",
-          weight1: board.weight1 ?? "",
-          weight2: board.weight2 ?? "",
-          weight3: board.weight3 ?? "",
-          weight4: board.weight4 ?? "",
-          weight5: board.weight5 ?? "",
-          weight6: board.weight6 ?? "",
-          weight7: board.weight7 ?? "",
-        }
+            projectName: board.name || "",
+            weight1: board.weight1 ?? "",
+            weight2: board.weight2 ?? "",
+            weight3: board.weight3 ?? "",
+            weight4: board.weight4 ?? "",
+            weight5: board.weight5 ?? "",
+            weight6: board.weight6 ?? "",
+            weight7: board.weight7 ?? "",
+          }
         : {}
     );
     setOpenPopup(true);
@@ -192,7 +216,9 @@ const AdminPanel = () => {
             <tr key={idx}>
               <td style={styles.td}><b>{seed}</b></td>
               <td style={styles.td}>31/08/2025</td>
-              <td style={{ ...styles.td, color: idx === 0 ? "#EEB64E" : "#6beb45ff" }}><b>{idx === 0 ? "pending..." : "approved!"}</b></td>
+              <td style={{ ...styles.td, color: idx === 0 ? "#EEB64E" : "#6beb45ff" }}>
+                <b>{idx === 0 ? "pending..." : "approved!"}</b>
+              </td>
               <td style={styles.td}><button style={styles.viewButton}>View</button></td>
               <td style={styles.td}>
                 <button style={styles.iconButton("#86E63C")}><FaCheck /></button>
@@ -208,6 +234,35 @@ const AdminPanel = () => {
 
   const renderUsersSection = () => {
     const board = boards.find((b) => b._id === selectedBoardId);
+
+    const rows = (board?.users || [])
+      .map((entry) => {
+        const u =
+          typeof entry === "string"
+            ? users.find((x) => String(x._id) === String(entry))
+            : entry;
+
+        if (!u) return null;
+        return (
+          <tr key={u._id}>
+            <td>
+              {(u.firstName ?? u.name?.split(" ")?.[0] ?? "")}{" "}
+              {(u.lastName ?? u.name?.split(" ")?.slice(1).join(" ") ?? "")}
+            </td>
+            <td>{u.email}</td>
+            <td>{Array.isArray(u.roles) ? u.roles.join(", ") : "User"}</td>
+            <td>
+              <button
+                style={{ ...styles.viewButton, backgroundColor: "rgba(239,200,23,0.2)" }}
+              >
+                Edit
+              </button>
+            </td>
+          </tr>
+        );
+      })
+      .filter(Boolean);
+
     return (
       <div>
         <h2 style={{ marginBottom: "10px" }}>Manage Users</h2>
@@ -221,30 +276,37 @@ const AdminPanel = () => {
             </tr>
           </thead>
           <tbody>
-            {usersLoading ? <tr><td colSpan="4">Loading...</td></tr> :
-              usersError ? <tr><td colSpan="4" style={{ color: "red" }}>{usersError}</td></tr> :
-                board?.users?.map((id) => {
-                  const u = users.find((x) => x._id === id);
-                  if (!u) return null;
-                  return (
-                    <tr key={u._id}>
-                      <td>{u.firstName} {u.lastName}</td>
-                      <td>{u.email}</td>
-                      <td>{u.roles?.join(", ") || "User"}</td>
-                      <td>
-                        <button style={{ ...styles.viewButton, backgroundColor: "rgba(239,200,23,0.2)" }}>Edit</button>
-                      </td>
-                    </tr>
-                  );
-                }) || <tr><td colSpan="4">No users in this board</td></tr>
-            }
+            {usersLoading && <tr><td colSpan="4">Loading...</td></tr>}
+            {!usersLoading && usersError && (
+              <tr><td colSpan="4" style={{ color: "red" }}>{usersError}</td></tr>
+            )}
+            {!usersLoading && !usersError && (!board || (board.users || []).length === 0) && (
+              <tr><td colSpan="4">No users in this board</td></tr>
+            )}
+            {!usersLoading && !usersError && rows}
           </tbody>
         </table>
 
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: "15px" }}>
-          <input type="email" placeholder="Enter user email" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} style={styles.input} />
-          <button style={styles.addButton} onClick={() => handleUserBoardUpdate(selectedBoardId, "add")}>Add User</button>
-          <button style={styles.removeButton} onClick={() => handleUserBoardUpdate(selectedBoardId, "remove")}>Remove User</button>
+          <input
+            type="email"
+            placeholder="Enter user email"
+            value={emailInput}
+            onChange={(e) => setEmailInput(e.target.value)}
+            style={styles.input}
+          />
+          <button
+            style={styles.addButton}
+            onClick={() => handleUserBoardUpdate(selectedBoardId, "add")}
+          >
+            Add User
+          </button>
+          <button
+            style={styles.removeButton}
+            onClick={() => handleUserBoardUpdate(selectedBoardId, "remove")}
+          >
+            Remove User
+          </button>
         </div>
       </div>
     );
@@ -258,9 +320,17 @@ const AdminPanel = () => {
           <div style={{ fontWeight: 700, color: "#523629" }}>Admin Panel</div>
           <label style={{ display: "flex", gap: "8px", alignItems: "center" }}>
             <span style={{ color: "#523629", fontWeight: 600 }}>Select Project Board:</span>
-            <select value={selectedBoardId} onChange={(e) => setSelectedBoardId(e.target.value)} style={{ padding: "10px 12px", borderRadius: "8px", border: "2px solid #523629" }}>
+            <select
+              value={selectedBoardId}
+              onChange={(e) => setSelectedBoardId(e.target.value)}
+              style={{ padding: "10px 12px", borderRadius: "8px", border: "2px solid #523629" }}
+            >
               <option value="">-- Select a board --</option>
-              {boards.map((b) => <option key={b._id} value={b._id}>{b.projectName}</option>)}
+              {boards.map((b) => (
+                <option key={b._id} value={b._id}>
+                  {b.projectName || b.name}
+                </option>
+              ))}
             </select>
           </label>
         </div>
@@ -270,18 +340,30 @@ const AdminPanel = () => {
             <tbody>
               <tr>
                 <td style={{ ...styles.td, width: "20%" }}>
-                  <button style={styles.sectionButton(activeSection === "ideas")} onClick={() => setActiveSection("ideas")}>Manage Ideas</button>
-                  <button style={styles.sectionButton(activeSection === "users")} onClick={() => setActiveSection("users")}>Manage Users</button>
+                  <button style={styles.sectionButton(activeSection === "ideas")} onClick={() => setActiveSection("ideas")}>
+                    Manage Ideas
+                  </button>
+                  <button style={styles.sectionButton(activeSection === "users")} onClick={() => setActiveSection("users")}>
+                    Manage Users
+                  </button>
                 </td>
                 <td style={{ ...styles.td, width: "80%" }}>
-                  {boardsError ? <div style={{ color: "white" }}>Error: {boardsError}</div> : activeSection === "ideas" ? renderIdeasSection() : renderUsersSection()}
+                  {boardsError ? (
+                    <div style={{ color: "white" }}>Error: {boardsError}</div>
+                  ) : activeSection === "ideas" ? (
+                    renderIdeasSection()
+                  ) : (
+                    renderUsersSection()
+                  )}
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <button style={styles.floatingButton} onClick={() => handleOpenPopup()}>Create Project Board</button>
+        <button style={styles.floatingButton} onClick={() => handleOpenPopup()}>
+          Create Project Board
+        </button>
 
         <Dialog open={openPopup} onClose={() => setOpenPopup(false)} maxWidth="md" fullWidth>
           <DialogTitle>
@@ -294,7 +376,9 @@ const AdminPanel = () => {
             <BoardCreate setFormData={setBoardFormData} user={user} />
           </DialogContent>
           <DialogActions>
-            <Button variant="contained" color="primary" onClick={handleSaveBoard}>{editingBoard ? "Update Board" : "Save & Exit"}</Button>
+            <Button variant="contained" color="primary" onClick={handleSaveBoard}>
+              {editingBoard ? "Update Board" : "Save & Exit"}
+            </Button>
           </DialogActions>
         </Dialog>
       </div>

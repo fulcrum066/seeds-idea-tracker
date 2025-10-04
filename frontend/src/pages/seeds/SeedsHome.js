@@ -1,13 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import TopBar from '../../components/Navigation/NavBar';
 import { useSelector, useDispatch } from "react-redux";
-import {
-  getSeeds,
-  createSeed,
-  updateSeeds,
-  deleteSeeds,
-  modifySeed,
-} from "../../features/seed/seedSlice";
+import { getSeeds, createSeed, updateSeeds, deleteSeeds, modifySeed, toggleFavorite, addComment, deleteComment } from "../../features/seed/seedSlice";
 import { getUser } from "../../features/auth/authSlice";
 import { getBoards } from "../../features/board/boardService";
 import Spinner from "../../components/Spinner";
@@ -21,6 +15,7 @@ import {
   IconButton,
   Chip,
 } from "@mui/material";
+import SeedView from "../../components/SeedView/SeedView";
 import CloseIcon from "@mui/icons-material/Close";
 import { useNavigate } from "react-router-dom";
 
@@ -41,6 +36,11 @@ function SeedsDashboard() {
   const [ideaFormData, setIdeaFormData] = useState({});
   const [openTestPopup, setOpenTestPopup] = useState(false);
   const [editingIdea, setEditingIdea] = useState(null);
+  const [openViewPopup, setOpenViewPopup] = useState(false);
+  const [viewingIdea, setViewingIdea] = useState(null);
+  const [isEditingInView, setIsEditingInView] = useState(false);
+  const [viewFormData, setViewFormData] = useState({});
+  const [newComment, setNewComment] = useState('');
 
   // getting database data
   useEffect(() => {
@@ -88,7 +88,7 @@ function SeedsDashboard() {
     };
   }, [user]);
 
-  // Build project list from seed groups (unchanged)
+  // Build project list from seed groups
   const projects = useMemo(() => {
     let projectList = [];
 
@@ -117,11 +117,17 @@ function SeedsDashboard() {
 
   // Use activeBoard.seeds if available, else filter Redux seeds by selected project
   const filteredIdeas = useMemo(() => {
-    // Prefer activeBoard.seeds if present
-    if (activeBoard?.seeds && Array.isArray(activeBoard.seeds) && activeBoard.seeds.length > 0) {
+    if (activeBoard?.seeds && Array.isArray(activeBoard.seeds)) {
+      if (activeBoard.seeds.length === 0) {
+        return [
+          { id: 0, title: "No Ideas Yet", content: "Click the CREATE IDEA button to add your first idea!" }
+        ];
+      }
+
       return activeBoard.seeds.map((seed, index) => {
         let cleanDescription = seed.description || "No description provided";
         let metric3Value = "Not set";
+
         if (typeof cleanDescription === "string" && cleanDescription.includes("||METRIC3:")) {
           const parts = cleanDescription.split("||METRIC3:");
           cleanDescription = parts[0];
@@ -134,6 +140,9 @@ function SeedsDashboard() {
           content: cleanDescription,
           creator: seed.creatorEmail,
           priority: seed.priority,
+          metricScore: typeof seed.metricScore === "number"
+            ? Math.round(seed.metricScore) // optional rounding for a clean display
+            : 0,
           metric1: seed.metric1 || "Not set",
           metric2: seed.metric2 || "Not set",
           metric3: metric3Value !== "Not set" ? metric3Value : (seed.metric3 || "Not set"),
@@ -142,62 +151,47 @@ function SeedsDashboard() {
           metric6: seed.metric6 || "Not set",
           metric7: seed.metric7 || "Not set",
           metric8: seed.metric8 || "Not set",
+          isFavorite: seed.isFavorite || false,
+          comments: seed.comments || []
         };
       });
     }
 
-    // Otherwise derive from Redux seeds + selected project
-    if (!Array.isArray(allSeeds) || allSeeds.length === 0) {
-      return [
-        {
-          id: 0,
-          title: "No Ideas Yet",
-          content: "Click the CREATE IDEA button to add your first idea!",
-        },
-      ];
-    }
+    return []; // no board selected
+  }, [activeBoard]);
 
-    const selectedProjectData = projects[selectedProject];
-    if (!selectedProjectData) return [];
-
-    return allSeeds
-      .filter((seed) => {
-        if (!seed.group) {
-          return selectedProject === 0;
-        }
-        return seed.group === selectedProjectData.groupName;
-      })
-      .map((seed, index) => {
-        let cleanDescription = seed.description || "No description provided";
-        let metric3Value = "Not set";
-        if (typeof cleanDescription === "string" && cleanDescription.includes("||METRIC3:")) {
-          const parts = cleanDescription.split("||METRIC3:");
-          cleanDescription = parts[0];
-          metric3Value = parts[1] || "Not set";
-        }
-
-        return {
-          id: seed._id || seed.id || index,
-          title: seed.title || "Untitled Idea",
-          content: cleanDescription,
-          creator: seed.creatorEmail,
-          priority: seed.priority,
-          metric1: seed.metric1 || "Not set",
-          metric2: seed.metric2 || "Not set",
-          metric3: metric3Value !== "Not set" ? metric3Value : (seed.metric3 || "Not set"),
-          metric4: seed.metric4 || "Not set",
-          metric5: seed.metric5 || "Not set",
-          metric6: seed.metric6 || "Not set",
-          metric7: seed.metric7 || "Not set",
-          metric8: seed.metric8 || "Not set",
-        };
-      });
-  }, [activeBoard, allSeeds, selectedProject, projects]);
 
   // Creates a new seed in the database
-  const handleCreateSeed = (seedData) => {
-    dispatch(createSeed(seedData));
+  const handleCreateSeed = async (seedData) => {
+    const payload = activeBoard?._id ? { ...seedData, boardId: activeBoard._id } : seedData;
+    let tempId = `temp-${Date.now()}`;
+    if (activeBoard) {
+      setActiveBoard((b) => ({
+        ...b,
+        seeds: [...(b?.seeds ?? []), { ...payload, _id: tempId, isFavorite: false }],
+      }));
+    }
+    try {
+      const created = await dispatch(createSeed(payload)).unwrap();
+
+      if (activeBoard) {
+        setActiveBoard((b) => ({
+          ...b,
+          seeds: (b?.seeds ?? []).map((s) => (s._id === tempId ? created : s)),
+        }));
+      }
+    } catch (err) {
+      if (activeBoard) {
+        setActiveBoard((b) => ({
+          ...b,
+          seeds: (b?.seeds ?? []).filter((s) => s._id !== tempId),
+        }));
+      }
+      console.error("Create seed failed:", err);
+      alert("Could not create the idea.");
+    }
   };
+
 
   // Opens the create/edit popup for new idea
   const handleOpenTestPopup = () => {
@@ -224,19 +218,188 @@ function SeedsDashboard() {
     setOpenTestPopup(true);
   };
 
-  // Deletes an idea after confirmation
-  const handleDeleteIdea = (ideaId) => {
-    if (window.confirm("Are you sure you want to delete this idea?")) {
-      // your deleteSeeds expects an array of IDs
-      dispatch(deleteSeeds([ideaId]));
+  const handleViewIdea = (idea) => {
+    setViewingIdea(idea);
+    setViewFormData({
+      title: idea.title,
+      description: idea.content,
+      priority: idea.priority || 'low',
+      metric1: idea.metric1 || '',
+      metric2: idea.metric2 || '',
+      metric3: idea.metric3 || ''
+    });
+    setIsEditingInView(false);
+    setNewComment('');
+    setOpenViewPopup(true);
+  };
+
+  const handleToggleFavorite = async (ideaId) => {
+    if (activeBoard?.seeds?.length) {
+      setActiveBoard((b) => ({
+        ...b,
+        seeds: b.seeds.map((s) =>
+          (s._id || s.id) === ideaId ? { ...s, isFavorite: !s.isFavorite } : s
+        ),
+      }));
+    }
+    if (viewingIdea && (viewingIdea._id || viewingIdea.id) === ideaId) {
+      setViewingIdea((v) => ({ ...v, isFavorite: !v.isFavorite }));
+    }
+
+    try {
+      await dispatch(toggleFavorite(ideaId)).unwrap();
+    } catch (err) {
+      // Roll back on failure
+      if (activeBoard?.seeds?.length) {
+        setActiveBoard((b) => ({
+          ...b,
+          seeds: b.seeds.map((s) =>
+            (s._id || s.id) === ideaId ? { ...s, isFavorite: !s.isFavorite } : s
+          ),
+        }));
+      }
+      if (viewingIdea && (viewingIdea._id || viewingIdea.id) === ideaId) {
+        setViewingIdea((v) => ({ ...v, isFavorite: !v.isFavorite }));
+      }
+      console.error("Toggle favourite failed:", err);
+      alert("Could not update favourite.");
     }
   };
+
+
+  const handleAddComment = (ideaId) => {
+    if (newComment.trim()) {
+      const commentData = {
+        text: newComment.trim(),
+        author: user?.name || 'Anonymous',
+        authorEmail: user?.email || '',
+        createdAt: new Date()
+      };
+
+      // Update local state immediately
+      if (viewingIdea && viewingIdea.id === ideaId) {
+        setViewingIdea({
+          ...viewingIdea,
+          comments: [...(viewingIdea.comments || []), commentData]
+        });
+      }
+
+      dispatch(addComment({ seedId: ideaId, commentData }));
+      setNewComment('');
+    }
+  };
+
+  const handleDeleteComment = (ideaId, commentId) => {
+    // Update local state immediately
+    if (viewingIdea && viewingIdea.id === ideaId) {
+      setViewingIdea({
+        ...viewingIdea,
+        comments: viewingIdea.comments.filter(comment => comment._id !== commentId)
+      });
+    }
+
+    dispatch(deleteComment({ seedId: ideaId, commentId }));
+  };
+
+  const handleEditInView = () => {
+    setIsEditingInView(true);
+  };
+
+  const handleSaveInView = async () => {
+    const cleanDescription = viewFormData.description?.trim();
+    const cleanTitle = viewFormData.title?.trim();
+
+    if (!cleanDescription || !cleanTitle) {
+      alert("Please enter both title and description");
+      return;
+    }
+
+    const currentProjectGroup = projects[selectedProject]?.groupName;
+
+    const updateData = {
+      _id: viewingIdea.id,
+      title: cleanTitle,
+      description: cleanDescription + (viewFormData.metric3 ? `||METRIC3:${viewFormData.metric3}` : ""),
+      creatorName: user?._id || null,
+      creatorEmail: user?.email || "",
+      group: currentProjectGroup || `Project ${selectedProject}`,
+      subGroup: viewFormData.metric1 || "",
+      type: viewFormData.metric2 || "",
+      priority: (viewFormData.priority || "low").toLowerCase(),
+    };
+
+    // Update the seed data
+    dispatch(modifySeed(updateData));
+    await dispatch(updateSeeds());
+
+    // Update the viewing idea with the new data
+    const updatedIdea = {
+      ...viewingIdea,
+      title: cleanTitle,
+      content: cleanDescription,
+      priority: viewFormData.priority || 'low',
+      metric1: viewFormData.metric1 || 'Not set',
+      metric2: viewFormData.metric2 || 'Not set',
+      metric3: viewFormData.metric3 || 'Not set'
+    };
+
+    setViewingIdea(updatedIdea);
+    setIsEditingInView(false);
+  };
+
+  const handleCancelEdit = () => {
+    setViewFormData({
+      title: viewingIdea.title,
+      description: viewingIdea.content,
+      priority: viewingIdea.priority || 'low',
+      metric1: viewingIdea.metric1 || '',
+      metric2: viewingIdea.metric2 || '',
+      metric3: viewingIdea.metric3 || ''
+    });
+    setIsEditingInView(false);
+  };
+
+  // Deletes an idea after confirmation
+  const handleDeleteIdea = async (ideaId) => {
+    if (!window.confirm("Are you sure you want to delete this idea?")) return;
+
+    const prevBoard = activeBoard;
+    if (activeBoard?.seeds?.length) {
+      setActiveBoard((b) => ({
+        ...b,
+        seeds: b.seeds.filter((s) => (s._id || s.id) !== ideaId),
+      }));
+    }
+
+    if (viewingIdea && (viewingIdea._id || viewingIdea.id) === ideaId) {
+      handleCloseViewPopup();
+    }
+
+    try {
+      await dispatch(deleteSeeds([ideaId])).unwrap();
+    } catch (err) {
+      // Roll back on failure
+      setActiveBoard(prevBoard);
+      console.error("Delete failed:", err);
+      alert("Could not delete the idea.");
+    }
+  };
+
 
   // Closes the create/edit dialog and resets state
   const handleCloseTestPopup = () => {
     setOpenTestPopup(false);
     setEditingIdea(null);
     setIdeaFormData({});
+  };
+
+  // Closes the view dialog and resets state
+  const handleCloseViewPopup = () => {
+    setOpenViewPopup(false);
+    setViewingIdea(null);
+    setIsEditingInView(false);
+    setViewFormData({});
+    setNewComment('');
   };
 
   // Show spinner while data is loading
@@ -514,103 +677,133 @@ function SeedsDashboard() {
                 key={idea.id}
                 style={{
                   backgroundColor: "#6a4026",
-                  borderRadius: "8px",
-                  padding: "16px",
-                  boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-                  position: "relative",
+                  borderRadius: "24px",
+                  padding: "14px 14px 18px",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                  margin: "0 auto",
+                  width: "80%",
+                  marginBottom: "12px",
                 }}
               >
+                {/* Title bar */}
                 <h3
                   style={{
                     color: "#e8c352",
-                    fontSize: "14px",
-                    fontWeight: "500",
+                    fontSize: "16px",
+                    fontWeight: 700,
                     textAlign: "center",
-                    marginBottom: "12px",
-                    margin: "0 0 12px 0",
+                    margin: "0 0 8px 0",
                   }}
                 >
                   {idea.title}
                 </h3>
 
+                {/* Inner white card */}
                 <div
                   style={{
                     backgroundColor: "white",
-                    borderRadius: "6px",
-                    padding: "16px",
-                    minHeight: "100px",
-                    color: "#6a4026",
-                    fontSize: "13px",
-                    lineHeight: "1.4",
+                    borderRadius: "20px",
+                    padding: "14px",
                     display: "flex",
-                    gap: "16px",
+                    gap: "14px",
+                    alignItems: "stretch",
                   }}
                 >
-                  {/* Left */}
-                  <div style={{ flex: "1" }}>
-                    {/* Description */}
-                    <div style={{ marginBottom: "12px" }}>
-                      <strong>Description:</strong>
-                      <div style={{ marginTop: "2px" }}>{(idea.content ?? "").toString()}</div>
+                  {/* LEFT: Metric score box */}
+                  <div
+                    style={{
+                      width: 100,
+                      minWidth: 100,
+                      background: "#fafafa",
+                      border: "2px solid #cfcfcf",
+                      borderRadius: "14px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <div style={{ fontSize: 42, fontWeight: 800, color: "#2b2b2b", lineHeight: 1 }}>
+                      {idea.metricScore ?? 0}
                     </div>
+                  </div>
 
-                    {/* Priority */}
-                    <div style={{ marginBottom: "12px" }}>
-                      <strong>Priority:</strong>
-                      <div
-                        style={{
-                          marginTop: "2px",
-                          padding: "2px 6px",
-                          backgroundColor:
-                            idea.priority === "high"
-                              ? "#ffebee"
-                              : idea.priority === "medium"
-                                ? "#fff3e0"
-                                : "#e8f5e8",
-                          borderRadius: "3px",
-                          display: "inline-block",
-                          fontSize: "11px",
-                          textTransform: "capitalize",
-                        }}
-                      >
-                        {idea.priority || "Low"}
-                      </div>
+                  {/* RIGHT: Details */}
+                  <div
+                    style={{
+                      flex: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 10,
+                      color: "#202020",
+                      fontSize: "13px",
+                    }}
+                  >
+                    {/* Description */}
+                    <div style={{ lineHeight: 1.3 }}>
+                      <strong>Description: </strong>
+                      {idea.content}
                     </div>
 
                     {/* Creator */}
-                    <div style={{ marginBottom: "12px" }}>
-                      <strong>Creator:</strong>
-                      <div style={{ marginTop: "2px", fontSize: "11px" }}>
-                        {idea.creator || "Unknown"}
-                      </div>
+                    <div style={{ fontSize: "12px", color: "#555" }}>
+                      <strong>Creator: </strong>{idea.creator || "Unknown"}
                     </div>
 
-                    {/* Metrics */}
-                    {[
-                      ["Metric 1", idea.metric1],
-                      ["Metric 2", idea.metric2],
-                      ["Metric 3", idea.metric3],
-                      ["Metric 4", idea.metric4],
-                      ["Metric 5", idea.metric5],
-                      ["Metric 6", idea.metric6],
-                      ["Metric 7", idea.metric7],
-                      ["Metric 8", idea.metric8],
-                    ].map(([label, value]) => (
-                      <div key={label} style={{ marginBottom: "12px" }}>
-                        <strong>{label}:</strong>
-                        <div style={{ marginTop: "2px", fontSize: "11px" }}>
-                          {value || "Not set"}
-                        </div>
-                      </div>
-                    ))}
+                    {/* Priority row */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontWeight: 700 }}>Priority:</span>
+                      <span
+                        style={{
+                          padding: "4px 10px",
+                          borderRadius: 8,
+                          border: "1px solid #d0d0d0",
+                          background:
+                            (idea.priority || "").toLowerCase() === "high"
+                              ? "#ffebee"
+                              : (idea.priority || "").toLowerCase() === "medium"
+                                ? "#fff7cc"
+                                : "#e8f5e8",
+                          color:
+                            (idea.priority || "").toLowerCase() === "high"
+                              ? "#d32f2f"
+                              : (idea.priority || "").toLowerCase() === "medium"
+                                ? "#9a7d00"
+                                : "#2e7d32",
+                          fontWeight: 700,
+                          fontSize: "12px",
+                          minWidth: 60,
+                          textAlign: "center",
+                        }}
+                      >
+                        {(idea.priority || "Low").charAt(0).toUpperCase() +
+                          (idea.priority || "low").slice(1)}
+                      </span>
+                    </div>
 
+                    {/* Buttons row (separate row, right-aligned) */}
                     <div
                       style={{
                         display: "flex",
-                        justifyContent: "flex-start",
+                        justifyContent: "flex-end",
                         gap: "6px",
+                        marginTop: "6px",
                       }}
                     >
+                      <button
+                        onClick={() => handleViewIdea(idea)}
+                        style={{
+                          backgroundColor: "#6a951f",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "3px",
+                          padding: "3px 7px",
+                          fontSize: "10px",
+                          fontWeight: "bold",
+                          cursor: "pointer",
+                        }}
+                      >
+                        View
+                      </button>
                       <button
                         onClick={() => handleEditIdea(idea)}
                         style={{
@@ -618,16 +811,14 @@ function SeedsDashboard() {
                           color: "#6a4026",
                           border: "none",
                           borderRadius: "3px",
-                          padding: "4px 8px",
+                          padding: "3px 7px",
                           fontSize: "10px",
                           fontWeight: "bold",
                           cursor: "pointer",
-                          boxShadow: "0 1px 2px rgba(0, 0, 0, 0.1)",
                         }}
                       >
                         Edit
                       </button>
-
                       <button
                         onClick={() => handleDeleteIdea(idea.id)}
                         style={{
@@ -635,47 +826,21 @@ function SeedsDashboard() {
                           color: "white",
                           border: "none",
                           borderRadius: "3px",
-                          padding: "8px 12px",
+                          padding: "3px 7px",
                           fontSize: "10px",
                           fontWeight: "bold",
                           cursor: "pointer",
-                          boxShadow: "0 1px 2px rgba(0, 0, 0, 0.1)",
                         }}
                       >
                         Delete
                       </button>
                     </div>
                   </div>
-
-                  {/* Right placeholder */}
-                  <div
-                    style={{
-                      flex: "0 0 200px",
-                      backgroundColor: "#f8f9fa",
-                      borderRadius: "4px",
-                      padding: "12px",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      border: "1px dashed #dee2e6",
-                      minHeight: "120px",
-                    }}
-                  >
-                    <div
-                      style={{ textAlign: "center", color: "#6c757d", fontSize: "10px" }}
-                    >
-                      <div>
-                        <strong>Media Section</strong>
-                      </div>
-                      <div style={{ marginTop: "2px" }}>
-                        Images, files, or attachments will display here
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             ))}
+
+
           </div>
 
           {/* Dialog for popups */}
@@ -721,6 +886,7 @@ function SeedsDashboard() {
                     creatorName: user?._id || null,
                     creatorEmail: user?.email || "",
                     group: currentProjectGroup,
+                    boardId: activeBoard?._id,
                     metric1: ideaFormData.metric1 || "",
                     metric2: ideaFormData.metric2 || "",
                     metric3: ideaFormData.metric3 || "",
@@ -750,6 +916,24 @@ function SeedsDashboard() {
               </Button>
             </DialogActions>
           </Dialog>
+
+          {/*Dialog for viewing seed idea*/}
+          <SeedView
+            open={openViewPopup}
+            onClose={handleCloseViewPopup}
+            viewingIdea={viewingIdea}
+            isEditingInView={isEditingInView}
+            setIsEditingInView={setIsEditingInView}
+            viewFormData={viewFormData}
+            setViewFormData={setViewFormData}
+            onSaveInView={handleSaveInView}
+            onCancelEdit={handleCancelEdit}
+            onToggleFavorite={handleToggleFavorite}
+            newComment={newComment}
+            setNewComment={setNewComment}
+            onAddComment={handleAddComment}
+            onDeleteComment={handleDeleteComment}
+          />
         </div>
       </div>
     </>
