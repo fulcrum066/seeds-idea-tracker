@@ -83,7 +83,7 @@ const updateSeedById = async (seedId, seedData, token) => {
 };
 
 //-----------------------------------------------------------------------------------
-//--------------------------------------DELETERS----------------------------------
+//--------------------------------------DELETERS-------------------------------------
 //-----------------------------------------------------------------------------------
 
 // Function to delete a seed by its ID
@@ -179,6 +179,22 @@ const deleteComment = async (seedId, commentId, token) => {
     throw error;
   }
 };
+
+//-----------------------------------------------------------------------------------
+//--------------------------------------SEARCH---------------------------------------
+//-----------------------------------------------------------------------------------
+
+export const searchSeeds = async ({ token, q, boardId, limit = 100 }) => {
+  const config = { headers: { Authorization: `Bearer ${token}` } };
+  const params = new URLSearchParams();
+  if (q) params.append("q", q);
+  if (boardId) params.append("boardId", boardId);
+  if (limit) params.append("limit", limit);
+
+  const res = await axios.get(`/api/search/seeds?${params.toString()}`, config);
+  return res.data;
+};
+
 
 const seedService = {
   createSeed,
