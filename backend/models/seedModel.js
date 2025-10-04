@@ -15,12 +15,8 @@ const seedSchema = new Schema({
   metric6: { type: String },
   metric7: { type: String },
   metric8: { type: String },
-  // weeksLeadTime: { type: Number },
+  metricScore: { type: Number, default: 0 }, 
   priority: { type: String, enum: ["low", "medium", "high"] },
-  // userAssigned: { type: Schema.Types.ObjectId, ref: "User" },
-  // startTime: { type: Date },
-  // expectedEndTime: { type: Date },
-  // completionDate: { type: Date },
   status: { type: String },
   isFavorite: { type: Boolean, default: false },
   comments: [{
