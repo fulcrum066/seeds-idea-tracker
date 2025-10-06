@@ -125,34 +125,27 @@ function SeedsDashboard() {
       }
 
       return activeBoard.seeds.map((seed, index) => {
-        let cleanDescription = seed.description || "No description provided";
-        let metric3Value = "Not set";
-
-        if (typeof cleanDescription === "string" && cleanDescription.includes("||METRIC3:")) {
-          const parts = cleanDescription.split("||METRIC3:");
-          cleanDescription = parts[0];
-          metric3Value = parts[1] || "Not set";
-        }
+        const seedId = seed._id || seed.id || `seed-${index}`;
+        const description = seed.description || "No description provided";
 
         return {
-          id: seed._id || seed.id || index,
+          id: seedId,
+          _id: seedId,
           title: seed.title || "Untitled Idea",
-          content: cleanDescription,
+          content: description,
           creator: seed.creatorEmail,
           priority: seed.priority,
-          metricScore: typeof seed.metricScore === "number"
-            ? Math.round(seed.metricScore) // optional rounding for a clean display
-            : 0,
-          metric1: seed.metric1 || "Not set",
-          metric2: seed.metric2 || "Not set",
-          metric3: metric3Value !== "Not set" ? metric3Value : (seed.metric3 || "Not set"),
-          metric4: seed.metric4 || "Not set",
-          metric5: seed.metric5 || "Not set",
-          metric6: seed.metric6 || "Not set",
-          metric7: seed.metric7 || "Not set",
-          metric8: seed.metric8 || "Not set",
+          metricScore:
+            typeof seed.metricScore === "number" ? Math.round(seed.metricScore) : 0,
+          maintainingCompliance: seed.maintainingCompliance || "",
+          reducingCost: seed.reducingCost || "",
+          reducingRisk: seed.reducingRisk || "",
+          improvingProductivity: seed.improvingProductivity || "",
+          improvingProcesses: seed.improvingProcesses || "",
+          creatingNewRevenueStreams: seed.creatingNewRevenueStreams || "",
           isFavorite: seed.isFavorite || false,
-          comments: seed.comments || []
+          comments: seed.comments || [],
+          rawSeed: seed,
         };
       });
     }
@@ -200,20 +193,31 @@ function SeedsDashboard() {
     setOpenTestPopup(true);
   };
 
+  const emptyMetrics = {
+    maintainingCompliance: "medium",
+    reducingCost: "medium",
+    reducingRisk: "medium",
+    improvingProductivity: "medium",
+    improvingProcesses: "medium",
+    creatingNewRevenueStreams: "medium",
+  };
+
   const handleEditIdea = (idea) => {
     setEditingIdea(idea);
     setIdeaFormData({
       title: idea.title,
       description: idea.content,
       priority: idea.priority || "low",
-      metric1: idea.metric1 || "",
-      metric2: idea.metric2 || "",
-      metric3: idea.metric3 || "",
-      metric4: idea.metric4 || "",
-      metric5: idea.metric5 || "",
-      metric6: idea.metric6 || "",
-      metric7: idea.metric7 || "",
-      metric8: idea.metric8 || "",
+      maintainingCompliance:
+        idea.maintainingCompliance || emptyMetrics.maintainingCompliance,
+      reducingCost: idea.reducingCost || emptyMetrics.reducingCost,
+      reducingRisk: idea.reducingRisk || emptyMetrics.reducingRisk,
+      improvingProductivity:
+        idea.improvingProductivity || emptyMetrics.improvingProductivity,
+      improvingProcesses:
+        idea.improvingProcesses || emptyMetrics.improvingProcesses,
+      creatingNewRevenueStreams:
+        idea.creatingNewRevenueStreams || emptyMetrics.creatingNewRevenueStreams,
     });
     setOpenTestPopup(true);
   };
@@ -223,10 +227,13 @@ function SeedsDashboard() {
     setViewFormData({
       title: idea.title,
       description: idea.content,
-      priority: idea.priority || 'low',
-      metric1: idea.metric1 || '',
-      metric2: idea.metric2 || '',
-      metric3: idea.metric3 || ''
+      priority: idea.priority || "low",
+      maintainingCompliance: idea.maintainingCompliance || "medium",
+      reducingCost: idea.reducingCost || "medium",
+      reducingRisk: idea.reducingRisk || "medium",
+      improvingProductivity: idea.improvingProductivity || "medium",
+      improvingProcesses: idea.improvingProcesses || "medium",
+      creatingNewRevenueStreams: idea.creatingNewRevenueStreams || "medium",
     });
     setIsEditingInView(false);
     setNewComment('');
@@ -314,18 +321,22 @@ function SeedsDashboard() {
       return;
     }
 
-    const currentProjectGroup = projects[selectedProject]?.groupName;
-
     const updateData = {
-      _id: viewingIdea.id,
+      _id: viewingIdea._id || viewingIdea.id,
       title: cleanTitle,
-      description: cleanDescription + (viewFormData.metric3 ? `||METRIC3:${viewFormData.metric3}` : ""),
+      description: cleanDescription,
       creatorName: user?._id || null,
       creatorEmail: user?.email || "",
-      group: currentProjectGroup || `Project ${selectedProject}`,
-      subGroup: viewFormData.metric1 || "",
-      type: viewFormData.metric2 || "",
+      group: viewingIdea.rawSeed?.group || viewingIdea.group || "",
+      subGroup: viewingIdea.rawSeed?.subGroup || viewingIdea.subGroup || "",
+      type: viewingIdea.rawSeed?.type || viewingIdea.type || "",
       priority: (viewFormData.priority || "low").toLowerCase(),
+      maintainingCompliance: viewFormData.maintainingCompliance,
+      reducingCost: viewFormData.reducingCost,
+      reducingRisk: viewFormData.reducingRisk,
+      improvingProductivity: viewFormData.improvingProductivity,
+      improvingProcesses: viewFormData.improvingProcesses,
+      creatingNewRevenueStreams: viewFormData.creatingNewRevenueStreams,
     };
 
     // Update the seed data
@@ -337,10 +348,13 @@ function SeedsDashboard() {
       ...viewingIdea,
       title: cleanTitle,
       content: cleanDescription,
-      priority: viewFormData.priority || 'low',
-      metric1: viewFormData.metric1 || 'Not set',
-      metric2: viewFormData.metric2 || 'Not set',
-      metric3: viewFormData.metric3 || 'Not set'
+      priority: viewFormData.priority || "low",
+      maintainingCompliance: viewFormData.maintainingCompliance,
+      reducingCost: viewFormData.reducingCost,
+      reducingRisk: viewFormData.reducingRisk,
+      improvingProductivity: viewFormData.improvingProductivity,
+      improvingProcesses: viewFormData.improvingProcesses,
+      creatingNewRevenueStreams: viewFormData.creatingNewRevenueStreams,
     };
 
     setViewingIdea(updatedIdea);
@@ -351,10 +365,16 @@ function SeedsDashboard() {
     setViewFormData({
       title: viewingIdea.title,
       description: viewingIdea.content,
-      priority: viewingIdea.priority || 'low',
-      metric1: viewingIdea.metric1 || '',
-      metric2: viewingIdea.metric2 || '',
-      metric3: viewingIdea.metric3 || ''
+      priority: viewingIdea.priority || "low",
+      maintainingCompliance:
+        viewingIdea.maintainingCompliance || "medium",
+      reducingCost: viewingIdea.reducingCost || "medium",
+      reducingRisk: viewingIdea.reducingRisk || "medium",
+      improvingProductivity:
+        viewingIdea.improvingProductivity || "medium",
+      improvingProcesses: viewingIdea.improvingProcesses || "medium",
+      creatingNewRevenueStreams:
+        viewingIdea.creatingNewRevenueStreams || "medium",
     });
     setIsEditingInView(false);
   };
@@ -857,7 +877,10 @@ function SeedsDashboard() {
             </DialogTitle>
 
             <DialogContent dividers>
-              <IdeaEdit setFormData={setIdeaFormData} user={user} />
+              <IdeaEdit
+                setFormData={setIdeaFormData}
+                initialSeed={editingIdea}
+              />
             </DialogContent>
 
             <DialogActions>
@@ -887,22 +910,25 @@ function SeedsDashboard() {
                     creatorEmail: user?.email || "",
                     group: currentProjectGroup,
                     boardId: activeBoard?._id,
-                    metric1: ideaFormData.metric1 || "",
-                    metric2: ideaFormData.metric2 || "",
-                    metric3: ideaFormData.metric3 || "",
-                    metric4: ideaFormData.metric4 || "",
-                    metric5: ideaFormData.metric5 || "",
-                    metric6: ideaFormData.metric6 || "",
-                    metric7: ideaFormData.metric7 || "",
-                    metric8: ideaFormData.metric8 || "",
+                    maintainingCompliance:
+                      ideaFormData.maintainingCompliance || "medium",
+                    reducingCost: ideaFormData.reducingCost || "medium",
+                    reducingRisk: ideaFormData.reducingRisk || "medium",
+                    improvingProductivity:
+                      ideaFormData.improvingProductivity || "medium",
+                    improvingProcesses:
+                      ideaFormData.improvingProcesses || "medium",
+                    creatingNewRevenueStreams:
+                      ideaFormData.creatingNewRevenueStreams || "medium",
                     priority: (ideaFormData.priority || "low").toLowerCase(),
-                    description:
-                      cleanDescription +
-                      (ideaFormData.metric3 ? `||METRIC3:${ideaFormData.metric3}` : ""),
+                    description: cleanDescription,
                   };
 
                   if (editingIdea) {
-                    const updateData = { ...seedData, _id: editingIdea.id };
+                    const updateData = {
+                      ...seedData,
+                      _id: editingIdea._id || editingIdea.id,
+                    };
                     dispatch(modifySeed(updateData));
                     dispatch(updateSeeds());
                   } else {

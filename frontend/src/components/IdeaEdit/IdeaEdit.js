@@ -1,12 +1,49 @@
 import React, { useState, useEffect } from "react";
 
-function IdeaEdit({ setFormData, user }) {
+const METRICS = [
+  { name: "maintainingCompliance", label: "Maintaining Compliance" },
+  { name: "reducingCost", label: "Reducing Cost" },
+  { name: "reducingRisk", label: "Reducing Risk" },
+  { name: "improvingProductivity", label: "Improving Productivity" },
+  { name: "improvingProcesses", label: "Improving Processes" },
+  { name: "creatingNewRevenueStreams", label: "Creating New Revenue Streams" },
+];
+
+const RATING_OPTIONS = ["very high", "high", "medium", "low", "very low"];
+
+function IdeaEdit({ setFormData, initialSeed }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState("Low");
-  const [metric1, setMetric1] = useState("");
-  const [metric2, setMetric2] = useState("");
-  const [metric3, setMetric3] = useState("");
+  const [priority, setPriority] = useState("low");
+  const [metrics, setMetrics] = useState({
+    maintainingCompliance: "medium",
+    reducingCost: "medium",
+    reducingRisk: "medium",
+    improvingProductivity: "medium",
+    improvingProcesses: "medium",
+    creatingNewRevenueStreams: "medium",
+  });
+
+  useEffect(() => {
+    if (initialSeed) {
+      setTitle(initialSeed.title || "");
+      setDescription(initialSeed.description ?? initialSeed.content ?? "");
+      setPriority((initialSeed.priority || "low").toLowerCase());
+      setMetrics((prev) => ({
+        ...prev,
+        maintainingCompliance:
+          initialSeed.maintainingCompliance || prev.maintainingCompliance,
+        reducingCost: initialSeed.reducingCost || prev.reducingCost,
+        reducingRisk: initialSeed.reducingRisk || prev.reducingRisk,
+        improvingProductivity:
+          initialSeed.improvingProductivity || prev.improvingProductivity,
+        improvingProcesses:
+          initialSeed.improvingProcesses || prev.improvingProcesses,
+        creatingNewRevenueStreams:
+          initialSeed.creatingNewRevenueStreams || prev.creatingNewRevenueStreams,
+      }));
+    }
+  }, [initialSeed]);
 
   // Send data to SeedsHome whenever something changes
   useEffect(() => {
@@ -14,11 +51,9 @@ function IdeaEdit({ setFormData, user }) {
       title,
       description,
       priority,
-      metric1,
-      metric2,
-      metric3
+      ...metrics,
     });
-  }, [title, description, priority, metric1, metric2, metric3, setFormData]);
+  }, [title, description, priority, metrics, setFormData]);
 
   // --- Same styles as before ---
   const containerStyle = {
@@ -85,9 +120,9 @@ function IdeaEdit({ setFormData, user }) {
   return (
     <div style={containerStyle}>
       <div style={leftHalfStyle}>
-        <h2 style={headingStyle}>Create an Idea</h2>
+        <h2 style={headingStyle}>{initialSeed ? "Edit Idea" : "Create an Idea"}</h2>
 
-        <label style={labelStyle}>Give your Seed a Title!</label>
+        <label style={labelStyle}>{initialSeed ? "Update the Title" : "Give your Seed a Title!"}</label>
         <input
           type="text"
           placeholder="Enter your idea title..."
@@ -96,7 +131,7 @@ function IdeaEdit({ setFormData, user }) {
           onChange={(e) => setTitle(e.target.value)}
         />
 
-        <label style={labelStyle}>Describe your Seed</label>
+        <label style={labelStyle}>{initialSeed ? "Update the Description" : "Describe your Seed"}</label>
         <input
           type="text"
           placeholder="Description..."
@@ -105,57 +140,38 @@ function IdeaEdit({ setFormData, user }) {
           onChange={(e) => setDescription(e.target.value)}
         />
 
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '12px', alignSelf: 'flex-start' }}>
-          <button
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#4CAF50',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              fontSize: '14px',
-            }}
-          >
-            Add Label
-          </button>
-
-          <div>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '12px', alignSelf: 'stretch' }}>
+          <div style={{ width: '100%' }}>
             <label style={{ ...labelStyle, marginBottom: '4px' }}>Priority:</label>
             <select style={inputStyle} value={priority} onChange={(e) => setPriority(e.target.value)}>
-              <option value="Low">Low</option>
-              <option value="Medium">Medium</option>
-              <option value="High">High</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
             </select>
           </div>
         </div>
 
         {/* Metric Data Fields */}
-        <label style={labelStyle}>Metric Data 1</label>
-        <input
-          type="text"
-          placeholder="Enter metric data 1..."
-          style={inputStyle}
-          value={metric1}
-          onChange={(e) => setMetric1(e.target.value)}
-        />
-
-        <label style={labelStyle}>Metric Data 2</label>
-        <input
-          type="text"
-          placeholder="Enter metric data 2..."
-          style={inputStyle}
-          value={metric2}
-          onChange={(e) => setMetric2(e.target.value)}
-        />
-
-        <label style={labelStyle}>Metric Data 3</label>
-        <input
-          type="text"
-          placeholder="Enter metric data 3..."
-          style={inputStyle}
-          value={metric3}
-          onChange={(e) => setMetric3(e.target.value)}
-        />
+        <div style={{ width: '100%', marginTop: '12px' }}>
+          {METRICS.map((metric) => (
+            <div key={metric.name} style={{ marginBottom: '10px' }}>
+              <label style={labelStyle}>{metric.label}</label>
+              <select
+                style={inputStyle}
+                value={metrics[metric.name]}
+                onChange={(e) =>
+                  setMetrics((prev) => ({ ...prev, [metric.name]: e.target.value }))
+                }
+              >
+                {RATING_OPTIONS.map((option) => (
+                  <option key={option} value={option} style={{ textTransform: 'capitalize' }}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Right half stays exactly the same */}

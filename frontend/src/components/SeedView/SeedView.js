@@ -1,14 +1,23 @@
-// src/components/SeedView/SeedView.js
-import React from "react";
+import CloseIcon from "@mui/icons-material/Close";
 import {
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  IconButton,
   Button,
+  IconButton,
 } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
+
+const METRICS = [
+  { name: "maintainingCompliance", label: "Maintaining Compliance" },
+  { name: "reducingCost", label: "Reducing Cost" },
+  { name: "reducingRisk", label: "Reducing Risk" },
+  { name: "improvingProductivity", label: "Improving Productivity" },
+  { name: "improvingProcesses", label: "Improving Processes" },
+  { name: "creatingNewRevenueStreams", label: "Creating New Revenue Streams" },
+];
+
+const RATING_OPTIONS = ["very high", "high", "medium", "low", "very low"];
 
 export default function SeedView({
   open,
@@ -44,6 +53,7 @@ export default function SeedView({
     fontSize: "14px",
     backgroundColor: "#fff",
     minHeight: "20px",
+    textTransform: "capitalize",
   };
 
   const inputStyle = {
@@ -68,7 +78,7 @@ export default function SeedView({
 
         {/* Favorite toggle pill */}
         <div
-          onClick={() => onToggleFavorite(viewingIdea.id)}
+          onClick={() => onToggleFavorite(viewingIdea._id || viewingIdea.id)}
           role="button"
           aria-label="toggle-favorite"
           style={{
@@ -159,7 +169,7 @@ export default function SeedView({
                 />
               ) : (
                 <div style={{ ...readonlyBox, minHeight: 100 }}>
-                  {viewingIdea.content}
+                  {viewingIdea.content || viewingIdea.description}
                 </div>
               )}
 
@@ -189,25 +199,27 @@ export default function SeedView({
             {/* Right column */}
             <div style={{ flex: 1, minWidth: 240 }}>
               <label style={labelStyle}>Creator:</label>
-              <div style={readonlyBox}>
-                {viewingIdea.creatorName || "Unknown"}
+                  <div style={readonlyBox}>
+                    {viewingIdea.creatorName || viewingIdea.rawSeed?.creatorName || "Unknown"}
               </div>
 
               <label style={labelStyle}>Creator Email:</label>
-              <div style={readonlyBox}>
-                {viewingIdea.creatorEmail || "Unknown"}
+                  <div style={readonlyBox}>
+                    {viewingIdea.creatorEmail || viewingIdea.rawSeed?.creatorEmail || "Unknown"}
               </div>
 
               <label style={labelStyle}>Created:</label>
               <div style={readonlyBox}>
-                {viewingIdea.createdAt
-                  ? new Date(viewingIdea.createdAt).toLocaleString()
+                    {viewingIdea.dateRecorded
+                  ? new Date(viewingIdea.dateRecorded).toLocaleString()
+                  : viewingIdea.rawSeed?.dateRecorded
+                  ? new Date(viewingIdea.rawSeed.dateRecorded).toLocaleString()
                   : "Unknown"}
               </div>
             </div>
           </div>
 
-          {/* “Metrics” / extra fields (1–5 demo) */}
+          {/* “Metrics” / extra fields */}
           <div
             style={{
               marginTop: 14,
@@ -216,32 +228,33 @@ export default function SeedView({
               gap: 10,
             }}
           >
-            {["metric1", "metric2", "metric3", "metric4", "metric5"].map(
-              (key) => (
-                <div key={key}>
-                  <label style={labelStyle}>
-                    {key.replace("metric", "Metric Data ")}
-                  </label>
-                  {isEditingInView ? (
-                    <input
-                      type="text"
-                      value={viewFormData[key] || ""}
-                      onChange={(e) =>
-                        setViewFormData({
-                          ...viewFormData,
-                          [key]: e.target.value,
-                        })
-                      }
-                      style={inputStyle}
-                    />
-                  ) : (
-                    <div style={readonlyBox}>
-                      {viewingIdea[key] || "Not set"}
-                    </div>
-                  )}
-                </div>
-              )
-            )}
+            {METRICS.map((metric) => (
+              <div key={metric.name}>
+                <label style={labelStyle}>{metric.label}</label>
+                {isEditingInView ? (
+                  <select
+                    style={inputStyle}
+                    value={viewFormData[metric.name] || "medium"}
+                    onChange={(e) =>
+                      setViewFormData({
+                        ...viewFormData,
+                        [metric.name]: e.target.value,
+                      })
+                    }
+                  >
+                    {RATING_OPTIONS.map((option) => (
+                      <option key={option} value={option} style={{ textTransform: "capitalize" }}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div style={readonlyBox}>
+                    {viewingIdea[metric.name] || viewingIdea.rawSeed?.[metric.name] || "Not set"}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
 
           {/* Media section (placeholder) */}
@@ -307,7 +320,10 @@ export default function SeedView({
                   {isEditingInView && (
                     <button
                       onClick={() =>
-                        onDeleteComment(viewingIdea.id, comment._id)
+                        onDeleteComment(
+                          viewingIdea._id || viewingIdea.id,
+                          comment._id
+                        )
                       }
                       style={{
                         backgroundColor: "#ff4444",
@@ -346,7 +362,7 @@ export default function SeedView({
                 style={{ ...inputStyle, flex: 1 }}
               />
               <button
-                onClick={() => onAddComment(viewingIdea.id)}
+                onClick={() => onAddComment(viewingIdea._id || viewingIdea.id)}
                 style={{
                   padding: "8px 14px",
                   backgroundColor: "#1976d2",
