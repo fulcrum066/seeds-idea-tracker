@@ -24,6 +24,7 @@ app.use(cors());
 // Routes
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/seeds", require("./routes/seedRoutes"));
+app.use("/api/board", require("./routes/boardRoutes"));
 
 // Serve frontend in production
 if (process.env.NODE_ENV === "production") {
