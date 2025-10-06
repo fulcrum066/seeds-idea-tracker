@@ -2,20 +2,20 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 const seedSchema = new Schema({
-  title: { type: String },
+  title: { type: String, require: true },
   description: { type: String, required: true },
   creatorName: { type: Schema.Types.ObjectId, ref: "User", required: true },
   creatorEmail: { type: String },
   dateRecorded: { type: Date, default: Date.now },
-  group: { type: String },
-  subGroup: { type: String },
-  type: { type: String },
-  weeksLeadTime: { type: Number },
+  // New specific metrics with a rating scale
+  maintainingCompliance: { type: String, enum: ["very high", "high", "medium", "low", "very low"] },
+  reducingCost: { type: String, enum: ["very high", "high", "medium", "low", "very low"] },
+  reducingRisk: { type: String, enum: ["very high", "high", "medium", "low", "very low"] },
+  improvingProductivity: { type: String, enum: ["very high", "high", "medium", "low", "very low"] },
+  improvingProcesses: { type: String, enum: ["very high", "high", "medium", "low", "very low"] },
+  creatingNewRevenueStreams: { type: String, enum: ["very high", "high", "medium", "low", "very low"] },
+  metricScore: { type: Number, default: 0 }, 
   priority: { type: String, enum: ["low", "medium", "high"] },
-  userAssigned: { type: Schema.Types.ObjectId, ref: "User" },
-  startTime: { type: Date },
-  expectedEndTime: { type: Date },
-  completionDate: { type: Date },
   status: { type: String },
   isFavorite: { type: Boolean, default: false },
   comments: [{

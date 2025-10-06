@@ -8,6 +8,7 @@ const {
   updateUser,
   deleteUser,
   getUserOne,
+  getUserIdByEmail,
   updateUserOne,
   manageUserOne,
 } = require("../controllers/userController");
@@ -18,7 +19,7 @@ router.post("/", registerUser);
 router.post("/login", loginUser);
 router.get("/me", protect, getMe);
 router.delete("/:id", protect, deleteUser);
-
+router.get("/byEmail/:email", protect, getUserIdByEmail);
 router.route("/user").get(protect, getUser);
 router.route("/user/:id").delete(protect, deleteUser);
 router.route("/user/:id").put(protect, updateUser);

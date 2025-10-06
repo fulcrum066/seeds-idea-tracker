@@ -28,6 +28,7 @@ class UserFactory {
       roles,
       exec: "no",
       supervisor: null,
+      boards: [],
     });
 
     return await newUser.save();

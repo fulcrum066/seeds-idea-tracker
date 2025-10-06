@@ -125,6 +125,18 @@ const getUserOne = async (paramsField, token) => {
   return response.data;
 };
 
+const getUserByEmail = async (email, token) => {
+  const config = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+
+  const response = await axios.get(`/api/users/byEmail/${email}`, config);
+  return response.data; // should return { _id, email, name, ... }
+};
+
+
 //-----------------------------------------------------------------------------------
 //--------------------------------------UPDATE ONES----------------------------------
 //-----------------------------------------------------------------------------------
@@ -176,6 +188,7 @@ const authService = {
   getMe,
   updateUser,
   getUserOne,
+  getUserByEmail,
   updateUserOne,
   manageUserOne,
   getOrgChart,
