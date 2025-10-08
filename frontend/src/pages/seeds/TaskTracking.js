@@ -6,7 +6,7 @@ import { getTasksForSeed, createTask, updateTask, deleteTask } from '../../featu
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 
-function TaskTracking() {
+function TimeTracking() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { allSeeds } = useSelector((state) => state.seeds);
@@ -77,7 +77,7 @@ function TaskTracking() {
     if (!time24) return 'N/A';
     const [hours, minutes] = time24.split(':');
     const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'AM' : 'PM';
+    const ampm = hour >= 12 ? 'PM' : 'AM';
     const displayHour = hour % 12 || 12;
     return `${displayHour}:${minutes} ${ampm}`;
   };
@@ -172,7 +172,7 @@ function TaskTracking() {
             color: '#e8c352',
             margin: 0
           }}>
-            Task Tracking
+            Time Tracking
           </h2>
         </div>
 
@@ -441,20 +441,21 @@ function TaskTracking() {
                     <button
                       onClick={() => handleOpenTaskDialog(task)}
                       style={{
-                        backgroundColor: '#6a951f',
-                        color: 'white',
+                        backgroundColor: '#e8c352',
+                        color: '#6a4026',
                         border: 'none',
-                        borderRadius: '50%',
-                        width: '40px',
-                        height: '40px',
+                        borderRadius: '6px',
+                        padding: '8px 16px',
+                        fontSize: '12px',
+                        fontWeight: '600',
                         cursor: 'pointer',
-                        fontSize: '16px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
+                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                        transition: 'all 0.2s ease'
                       }}
+                      onMouseOver={(e) => e.target.style.backgroundColor = '#deb837'}
+                      onMouseOut={(e) => e.target.style.backgroundColor = '#e8c352'}
                     >
-                      ✎
+                      Edit
                     </button>
 
                     <button
@@ -463,17 +464,18 @@ function TaskTracking() {
                         backgroundColor: '#dc3545',
                         color: 'white',
                         border: 'none',
-                        borderRadius: '50%',
-                        width: '40px',
-                        height: '40px',
+                        borderRadius: '6px',
+                        padding: '8px 16px',
+                        fontSize: '12px',
+                        fontWeight: '600',
                         cursor: 'pointer',
-                        fontSize: '16px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
+                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                        transition: 'all 0.2s ease'
                       }}
+                      onMouseOver={(e) => e.target.style.backgroundColor = '#c82333'}
+                      onMouseOut={(e) => e.target.style.backgroundColor = '#dc3545'}
                     >
-                      🗑
+                      Delete
                     </button>
                   </div>
                 </div>
@@ -618,4 +620,4 @@ function TaskTracking() {
   );
 }
 
-export default TaskTracking;
+export default TimeTracking;
