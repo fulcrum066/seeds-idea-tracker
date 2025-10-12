@@ -291,9 +291,10 @@ function SeedsDashboard() {
       title: idea.title,
       description: idea.content,
       priority: idea.priority || 'low',
-      metric1: idea.metric1 || '',
-      metric2: idea.metric2 || '',
-      metric3: idea.metric3 || ''
+      // Map the first 3 business metrics to the existing form fields
+      metric1: idea.estimatedIncreaseRevenue || '',
+      metric2: idea.costOfImplementation || '',
+      metric3: idea.creatingNewRevenueStreams || ''
     });
     setIsEditingInView(false);
     setNewComment('');
@@ -565,6 +566,7 @@ function SeedsDashboard() {
                   marginBottom: "8px",
                   margin: "0 0 8px 0",
                 }}
+                onClick={() => navigate('/time-tracking')}
               >
                 PROJECT BOARDS:
               </h3>
@@ -790,6 +792,8 @@ function SeedsDashboard() {
                       alignItems: "center",
                       justifyContent: "center",
                     }}
+                    onMouseOver={(e) => e.target.style.backgroundColor = '#deb837'}
+                    onMouseOut={(e) => e.target.style.backgroundColor = '#e8c352'}
                   >
                     <div style={{ fontSize: 42, fontWeight: 800, color: "#2b2b2b", lineHeight: 1 }}>
                       {idea.metricScore ?? 0}
@@ -806,6 +810,8 @@ function SeedsDashboard() {
                       color: "#202020",
                       fontSize: "13px",
                     }}
+                    onMouseOver={(e) => e.target.style.backgroundColor = '#c82333'}
+                    onMouseOut={(e) => e.target.style.backgroundColor = '#dc3545'}
                   >
                     {/* Description */}
                     <div style={{ lineHeight: 1.3 }}>
