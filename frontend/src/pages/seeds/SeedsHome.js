@@ -293,7 +293,12 @@ function SeedsDashboard() {
       priority: idea.priority || 'low',
       metric1: idea.metric1 || '',
       metric2: idea.metric2 || '',
-      metric3: idea.metric3 || ''
+      metric3: idea.metric3 || '',
+      metric4: idea.metric4 || "",
+      metric5: idea.metric5 || "",
+      metric6: idea.metric6 || "",
+      metric7: idea.metric7 || "",
+      metric8: idea.metric8 || "",
     });
     setIsEditingInView(false);
     setNewComment('');
@@ -407,7 +412,12 @@ function SeedsDashboard() {
       priority: viewFormData.priority || 'low',
       metric1: viewFormData.metric1 || 'Not set',
       metric2: viewFormData.metric2 || 'Not set',
-      metric3: viewFormData.metric3 || 'Not set'
+      metric3: viewFormData.metric3 || 'Not set',
+      metric4: viewFormData.metric4 || 'Not set',
+      metric5: viewFormData.metric5 || 'Not set',
+      metric6: viewFormData.metric6 || 'Not set',
+      metric7: viewFormData.metric7 || 'Not set',
+      metric8: viewFormData.metric8 || 'Not set',
     };
 
     setViewingIdea(updatedIdea);
@@ -421,7 +431,12 @@ function SeedsDashboard() {
       priority: viewingIdea.priority || 'low',
       metric1: viewingIdea.metric1 || '',
       metric2: viewingIdea.metric2 || '',
-      metric3: viewingIdea.metric3 || ''
+      metric3: viewingIdea.metric3 || '',
+      metric4: viewingIdea.metric4 || '',
+      metric5: viewingIdea.metric5 || '',
+      metric6: viewingIdea.metric6 || '',
+      metric7: viewingIdea.metric7 || '',
+      metric8: viewingIdea.metric8 || '',
     });
     setIsEditingInView(false);
   };
