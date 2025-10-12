@@ -8,7 +8,7 @@ const connectDB = require("./config/db");
 const cors = require("cors");
 
 // Port from .env or default to 5000
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 5001;
 
 // Initialize express
 const app = express();
@@ -25,6 +25,9 @@ app.use(cors());
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/seeds", require("./routes/seedRoutes"));
 app.use("/api/tasks", require("./routes/taskRoutes"));
+app.use("/api/board", require("./routes/boardRoutes"));
+app.use("/api", require("./routes/searchRoutes"));
+
 
 // Serve frontend in production
 if (process.env.NODE_ENV === "production") {

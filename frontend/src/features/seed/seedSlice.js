@@ -92,6 +92,63 @@ export const deleteSeeds = createAsyncThunk(
   }
 );
 
+// Toggle favorite status
+export const toggleFavorite = createAsyncThunk(
+  "seeds/toggleFavorite",
+  async (seedId, thunkAPI) => {
+    try {
+      const token = thunkAPI.getState().auth.user.token;
+      return await seedService.toggleFavorite(seedId, token);
+    } catch (error) {
+      const message =
+        (error.response &&
+          error.response.data &&
+          error.response.data.message) ||
+        error.message ||
+        error.toString();
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
+// Add comment to seed
+export const addComment = createAsyncThunk(
+  "seeds/addComment",
+  async ({ seedId, commentData }, thunkAPI) => {
+    try {
+      const token = thunkAPI.getState().auth.user.token;
+      return await seedService.addComment(seedId, commentData, token);
+    } catch (error) {
+      const message =
+        (error.response &&
+          error.response.data &&
+          error.response.data.message) ||
+        error.message ||
+        error.toString();
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
+// Delete comment from seed
+export const deleteComment = createAsyncThunk(
+  "seeds/deleteComment",
+  async ({ seedId, commentId }, thunkAPI) => {
+    try {
+      const token = thunkAPI.getState().auth.user.token;
+      return await seedService.deleteComment(seedId, commentId, token);
+    } catch (error) {
+      const message =
+        (error.response &&
+          error.response.data &&
+          error.response.data.message) ||
+        error.message ||
+        error.toString();
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
 // Create the slice
 export const seedSlice = createSlice({
   name: "seeds",
@@ -169,6 +226,60 @@ export const seedSlice = createSlice({
         );
       })
       .addCase(deleteSeeds.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload;
+      })
+      .addCase(toggleFavorite.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(toggleFavorite.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        const index = state.allSeeds.findIndex(
+          (seed) => seed._id === action.payload._id
+        );
+        if (index !== -1) {
+          state.allSeeds[index] = action.payload;
+        }
+      })
+      .addCase(toggleFavorite.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload;
+      })
+      .addCase(addComment.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(addComment.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        const index = state.allSeeds.findIndex(
+          (seed) => seed._id === action.payload._id
+        );
+        if (index !== -1) {
+          state.allSeeds[index] = action.payload;
+        }
+      })
+      .addCase(addComment.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload;
+      })
+      .addCase(deleteComment.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(deleteComment.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        const index = state.allSeeds.findIndex(
+          (seed) => seed._id === action.payload._id
+        );
+        if (index !== -1) {
+          state.allSeeds[index] = action.payload;
+        }
+      })
+      .addCase(deleteComment.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
