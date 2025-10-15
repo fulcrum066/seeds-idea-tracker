@@ -118,13 +118,16 @@ function SeedsDashboard() {
   // Use activeBoard.seeds if available, else filter Redux seeds by selected project
   const filteredIdeas = useMemo(() => {
     if (activeBoard?.seeds && Array.isArray(activeBoard.seeds)) {
-      if (activeBoard.seeds.length === 0) {
+
+      const activeSeeds = activeBoard.seeds.filter(seed => seed.status !== "pending" );
+      
+      if (activeSeeds.length === 0) {
         return [
           { id: 0, title: "No Ideas Yet", content: "Click the CREATE IDEA button to add your first idea!" }
         ];
       }
 
-      return activeBoard.seeds.map((seed, index) => {
+      return activeSeeds.map((seed, index) => {
         let cleanDescription = seed.description || "No description provided";
         let metric3Value = "Not set";
 
@@ -896,6 +899,7 @@ function SeedsDashboard() {
                     metric7: ideaFormData.metric7 || "",
                     metric8: ideaFormData.metric8 || "",
                     priority: (ideaFormData.priority || "low").toLowerCase(),
+                    status: "pending",
                     description:
                       cleanDescription +
                       (ideaFormData.metric3 ? `||METRIC3:${ideaFormData.metric3}` : ""),
@@ -935,7 +939,7 @@ function SeedsDashboard() {
             onDeleteComment={handleDeleteComment}
           />
         </div>
-      </div>
+      </div>32
     </>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import "../../styles/HomePageStyle.css";
 import { useSelector, useDispatch } from "react-redux";
 import { FaCheck, FaEdit, FaTimes } from "react-icons/fa";
@@ -8,6 +8,8 @@ import { getBoards, createBoard, updateBoard } from "../../features/board/boardS
 import { Button, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import BoardCreate from "../../components/BoardCreate/BoardCreate";
+
+import axios from "axios";
 
 // ---------- Style ----------
 const styles = {
@@ -79,8 +81,19 @@ const AdminPanel = () => {
   const [openPopup, setOpenPopup] = useState(false);
   const [editingBoard, setEditingBoard] = useState(null);
   const [boardFormData, setBoardFormData] = useState({});
+  
+  // Used by handleViewIdea and handeEditIdea Functions
+  const [ideaFormData, setIdeaFormData] = useState({});
+  const [openTestPopup, setOpenTestPopup] = useState(false);
+  const [editingIdea, setEditingIdea] = useState(null);
+  const [openViewPopup, setOpenViewPopup] = useState(false);
+  const [viewingIdea, setViewingIdea] = useState(null);
+  const [isEditingInView, setIsEditingInView] = useState(false);
+  const [viewFormData, setViewFormData] = useState({});
+  const [newComment, setNewComment] = useState('');
 
   // ---------- Board fetching ----------
+  // Automatically retrieves all boards before any are loaded into the page
   const refreshBoards = useCallback(async () => {
     try {
       setBoardsLoading(true);
@@ -96,6 +109,8 @@ const AdminPanel = () => {
   }, [token, selectedBoardId]);
 
   useEffect(() => { if (token) refreshBoards(); }, [token, refreshBoards]);
+
+  //console.log(boards)
 
   // ---------- User fetching ----------
   useEffect(() => {
@@ -206,31 +221,148 @@ const AdminPanel = () => {
     }
   };
 
+  // ------- Updating a Seed Status ---------
+  const updateSeed = async (seedId, updateData, token) => {
+    try {
+      const config = {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // if you use JWT
+        },
+      };
+
+      const { data } = await axios.put(`/api/seeds/seed/${seedId}`, updateData, config);
+      return data; // updated seed object
+    } catch (error) {
+      console.error("Failed to update seed:", error.response?.data || error.message);
+      throw error;
+    }
+  };
+
+  const handleSeedUpdate = async (seed, newStatus) => {
+    try {
+      const updated = await updateSeed(seed._id, { status: newStatus }, token);
+      console.log("Seed updated:", updated);
+      // Update boards state so UI reflects the change
+      setBoards(prevBoards =>
+        prevBoards.map(board =>
+          board._id === selectedBoardId
+            ? {
+                ...board,
+                seeds: board.seeds.map(s =>
+                  s._id === seed._id ? updated : s
+                ),
+              }
+            : board
+        )
+    );
+
+    } catch (error) {
+      console.error("Failed to approve seed:", error);
+    }
+  };
+
+
+
+  // ---------- Edit Idea -----------
+  const handleEditIdea = (idea) => {
+    setEditingIdea(idea);
+    setIdeaFormData({
+      title: idea.title,
+      description: idea.content,
+      priority: idea.priority || "low",
+      metric1: idea.metric1 || "",
+      metric2: idea.metric2 || "",
+      metric3: idea.metric3 || "",
+      metric4: idea.metric4 || "",
+      metric5: idea.metric5 || "",
+      metric6: idea.metric6 || "",
+      metric7: idea.metric7 || "",
+      metric8: idea.metric8 || "",
+    });
+    setOpenTestPopup(true);
+  };
+
+  // ---------- View Idea -----------
+  const handleViewIdea = (idea) => {
+    setViewingIdea(idea);
+    console.log("Accessed")
+    setViewFormData({
+      title: idea.title,
+      description: idea.content,
+      priority: idea.priority || 'low',
+      metric1: idea.metric1 || '',
+      metric2: idea.metric2 || '',
+      metric3: idea.metric3 || ''
+    });
+    setIsEditingInView(false);
+    setNewComment('');
+    setOpenViewPopup(true);
+  };
+
   // ---------- Render helpers ----------
-  const renderIdeasSection = () => (
-    <div>
-      <h2 style={{ marginBottom: "10px" }}>Manage Ideas</h2>
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <tbody>
-          {["Test Seed 1", "Test Seed 2"].map((seed, idx) => (
-            <tr key={idx}>
-              <td style={styles.td}><b>{seed}</b></td>
-              <td style={styles.td}>31/08/2025</td>
-              <td style={{ ...styles.td, color: idx === 0 ? "#EEB64E" : "#6beb45ff" }}>
-                <b>{idx === 0 ? "pending..." : "approved!"}</b>
-              </td>
-              <td style={styles.td}><button style={styles.viewButton}>View</button></td>
-              <td style={styles.td}>
-                <button style={styles.iconButton("#86E63C")}><FaCheck /></button>
-                <button style={styles.iconButton("#EEB64E")}><FaEdit /></button>
-                <button style={styles.iconButton("#D34D4D")}><FaTimes /></button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+  const renderIdeasSection = () => {
+    // Find the active board based on selectedBoardId
+    const activeBoard = boards.find((b) => b._id === selectedBoardId);
+
+    // Get seeds for that board (empty array if none)
+    const seedsForBoard = activeBoard?.seeds || [];
+    //console.log(seedsForBoard)
+
+    return (
+      <div>
+        <h2 style={{ marginBottom: "10px" }}>Manage Ideas</h2>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <tbody>
+            {seedsForBoard.length === 0 ? (
+              <tr>
+                <td style={styles.td} colSpan={5}>No seeds found for this board</td>
+              </tr>
+            ) : (
+              seedsForBoard.map((seed, idx) => (
+                <tr key={seed._id || idx}>
+                  <td style={styles.td}><b>{seed.title || `Untitled ${idx}`}</b></td>
+                  <td style={styles.td}>
+                    <b>
+                      {seed.dateRecorded
+                        ? new Date(seed.dateRecorded).toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "2-digit",
+                          })
+                        : `Untitled ${idx}`}
+                    </b>
+                  </td>
+                  <td style={{
+                      ...styles.td,
+                      color:
+                        seed.status === "pending"
+                          ? "#EEB64E"
+                          : seed.status === "approved"
+                          ? "#6beb45ff"
+                          : seed.status === "rejected"
+                          ? "#D34D4D"
+                          : "#999999" // fallback color
+                    }}
+                  >
+                    <b>{seed.status || "unknown"}</b>
+                  </td>
+                  <td style={styles.td}>
+                    <button onClick={() => handleViewIdea(seed)} style={styles.viewButton}>View</button>
+                  </td>
+                  <td style={styles.td}>
+                    <button onClick={() => handleSeedUpdate(seed, "approved")} style={styles.iconButton("#86E63C")}><FaCheck /></button>
+                    <button onClick ={() => handleEditIdea(seed)} style={styles.iconButton("#EEB64E")}><FaEdit /></button>
+                    <button onClick={() => handleSeedUpdate(seed, "rejected")} style={styles.iconButton("#D34D4D")}><FaTimes /></button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
 
   const renderUsersSection = () => {
     const board = boards.find((b) => b._id === selectedBoardId);
