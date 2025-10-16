@@ -325,7 +325,7 @@ const AdminPanel = () => {
               onChange={(e) => setSelectedBoardId(e.target.value)}
               style={{ padding: "10px 12px", borderRadius: "8px", border: "2px solid #523629" }}
             >
-              <option value="">-- Select a board --</option>
+              {/* <option value="">-- Select a board --</option> */}
               {boards.map((b) => (
                 <option key={b._id} value={b._id}>
                   {b.projectName || b.name}

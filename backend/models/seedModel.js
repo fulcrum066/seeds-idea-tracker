@@ -26,6 +26,11 @@ const seedSchema = new Schema({
   }]
 });
 
+seedSchema.index(
+  { title: "text", description: "text" },
+  { name: "seed_text_index", weights: { title: 5, description: 1 } }
+);
+
 const Seed = mongoose.model("Seed", seedSchema);
 
 module.exports = Seed;

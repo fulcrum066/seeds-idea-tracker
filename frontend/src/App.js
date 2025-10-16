@@ -16,6 +16,7 @@ import UserHomePage from "./pages/dashboard/HomePage";
 //pages
 import SeedsHome from "./pages/seeds/SeedsHome";
 import Nav from "./pages/navigation/Nav";
+import TaskTracking from "./pages/seeds/TaskTracking"; 
 import AdminPanel from "./pages/admin/AdminPanel";
 
 const ROLES = {
@@ -69,6 +70,7 @@ function App() {
             }/>
           <Route path="*" element={<PageNotFound />} />
           <Route path="/dashboard/seed/" element={<SeedsHome />} />
+          <Route path="/time-tracking" element={<TaskTracking />} />
           <Route path="/admin" element={<AdminPanel />} />
         </Route>
 

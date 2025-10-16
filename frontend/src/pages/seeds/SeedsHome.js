@@ -6,18 +6,12 @@ import { getUser } from "../../features/auth/authSlice";
 import { getBoards } from "../../features/board/boardService";
 import Spinner from "../../components/Spinner";
 import IdeaEdit from "../../components/IdeaEdit/IdeaEdit";
-import {
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  IconButton,
-  Chip,
-} from "@mui/material";
+import { Button, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Chip, } from "@mui/material";
 import SeedView from "../../components/SeedView/SeedView";
 import CloseIcon from "@mui/icons-material/Close";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { searchSeeds } from "../../features/seed/seedService";
 
 function SeedsDashboard() {
   const navigate = useNavigate();
@@ -41,6 +35,30 @@ function SeedsDashboard() {
   const [isEditingInView, setIsEditingInView] = useState(false);
   const [viewFormData, setViewFormData] = useState({});
   const [newComment, setNewComment] = useState('');
+
+  // search & sort
+  const [sortOption, setSortOption] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const handleSearch = async (e) => {
+    e?.preventDefault?.();
+    if (!user) return;
+
+    try {
+      const { results } = await searchSeeds({
+        token: user.token,
+        q: searchTerm,
+        boardId: activeBoard?._id,   // keeps it scoped to the active board
+        limit: 200,
+      });
+
+      // Replace the board’s visible seeds with the search results (no client filtering!)
+      setActiveBoard((prev) => prev ? { ...prev, seeds: results } : prev);
+    } catch (err) {
+      console.error("Search failed:", err?.response?.data || err.message);
+    }
+  };
+
 
   // getting database data
   useEffect(() => {
@@ -87,6 +105,55 @@ function SeedsDashboard() {
       alive = false;
     };
   }, [user]);
+
+  //sorting helper
+  const parseSortOption = (opt) => {
+    switch (opt) {
+      case "name_ascending": return { by: "name", order: "asc" };
+      case "name_descending": return { by: "name", order: "desc" };
+      case "metric_score_ascending": return { by: "metric", order: "asc" };
+      case "metric_score_descending": return { by: "metric", order: "desc" };
+      default: return null;
+    }
+  };
+
+  const fetchSortedSeeds = async (boardId, token, opt) => {
+    const params = parseSortOption(opt);
+    if (!params) return; // no selection yet
+
+    try {
+      const res = await axios.get(
+        `/api/board/board/${boardId}/seeds/sort`,
+        {
+          headers: { Authorization: `Bearer ${user?.token || token}` },
+          params, // { by: 'metric'|'name', order: 'asc'|'desc' }
+        }
+      );
+
+      // Put sorted seeds back into the currently active board in state
+      setActiveBoard((prev) => {
+        if (!prev || prev._id !== boardId) return prev; // user switched boards quickly
+        return { ...prev, seeds: res.data?.seeds ?? [] };
+      });
+    } catch (err) {
+      console.error("Sorting request failed:", err);
+      alert("Could not sort ideas. Please try again.");
+    }
+  };
+
+  // When user changes the dropdown
+  useEffect(() => {
+    if (!activeBoard?._id || !sortOption) return;
+    fetchSortedSeeds(activeBoard._id, user?.token, sortOption);
+  }, [sortOption, activeBoard?._id]); // re-run if active board changes
+
+  // Optional: choose a default sort whenever a new board becomes active
+  useEffect(() => {
+    // Pick your default sort (or leave blank to keep natural order coming from backend)
+    // e.g., default to metric descending:
+    setSortOption((prev) => prev || "metric_score_descending");
+  }, [activeBoard?._id]);
+
 
   // Build project list from seed groups
   const projects = useMemo(() => {
@@ -569,9 +636,9 @@ function SeedsDashboard() {
                   fontWeight: "bold",
                   marginBottom: "8px",
                   cursor: "pointer",
-                }}
+                }} onClick={() => navigate('/time-tracking')}
               >
-                TIME TRACKING
+                TASK TRACKING
               </button>
 
               <button
@@ -628,17 +695,18 @@ function SeedsDashboard() {
                   textAlign: "center",
                   border: "1px solid black",
                 }}
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value)}
               >
-                <option> </option>
-                <option value={"name_ascending"}>Name (Ascending)</option>
-                <option value={"name_descending"}>Name (Descending)</option>
-                <option value={"metric_score_ascending"}>
-                  Metrics Score (Ascending)
-                </option>
-                <option value={"metric_score_descending"}>
-                  Metrics Score (Descending)
-                </option>
+                <option value="metric_score_descending">Metrics Score ↓</option>
+                <option value="metric_score_ascending">Metrics Score ↑</option>
+                <option value="name_descending">Name ↓</option>
+                <option value="name_ascending">Name ↑</option>
+
+
+
               </select>
+
               <img
                 src="/projectBoard_images/filter.png"
                 style={{
@@ -653,7 +721,7 @@ function SeedsDashboard() {
 
               {/* Search Bar */}
               <form
-                onSubmit={(e) => e.preventDefault()}
+                onSubmit={handleSearch}
                 style={{
                   width: "950vh",
                   height: "40px",
@@ -669,7 +737,8 @@ function SeedsDashboard() {
                 <input
                   type="text"
                   placeholder="Enter Idea Name"
-                  name="q"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                   style={{
                     background: "transparent",
                     flex: "1",
