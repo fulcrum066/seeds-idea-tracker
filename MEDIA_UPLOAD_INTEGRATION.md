@@ -70,12 +70,11 @@ Here is a simple diagram of the upload process:
 
 ### Required Setup
 
-You only need to do two things to get this working locally:
+You only need to do one step to get this working locally:
 
-1.  **Add Environment Variables**: Create a `.env` file in the `backend` directory and add your Supabase credentials:
+1.  **Add Environment Variables**: Add the following in `.env` file in the `backend` directory:
+
     ```bash
     SUPABASE_URL=your_supabase_url
     SUPABASE_KEY=your_supabase_anon_key
     ```
-
-2.  **Create Supabase Bucket**: In your Supabase project dashboard, go to "Storage" and create a new bucket named `seed-attachments`. Make sure to toggle **"Public bucket"** ON.
