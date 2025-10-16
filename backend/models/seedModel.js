@@ -18,6 +18,16 @@ const seedSchema = new Schema({
   priority: { type: String, enum: ["low", "medium", "high"] },
   status: { type: String },
   isFavorite: { type: Boolean, default: false },
+  // Media attachments
+  attachments: [{
+    fileName: { type: String, required: true },
+    originalName: { type: String, required: true },
+    mimeType: { type: String, required: true },
+    fileSize: { type: Number, required: true },
+    url: { type: String, required: true },
+    uploadedAt: { type: Date, default: Date.now },
+    uploadedBy: { type: Schema.Types.ObjectId, ref: "User", required: true }
+  }],
   comments: [{
     text: { type: String, required: true },
     author: { type: String, required: true },

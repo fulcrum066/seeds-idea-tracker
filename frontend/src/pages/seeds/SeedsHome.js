@@ -212,6 +212,7 @@ function SeedsDashboard() {
           creatingNewRevenueStreams: seed.creatingNewRevenueStreams || "",
           isFavorite: seed.isFavorite || false,
           comments: seed.comments || [],
+          attachments: seed.attachments || [],
           rawSeed: seed,
         };
       });
@@ -290,7 +291,13 @@ function SeedsDashboard() {
   };
 
   const handleViewIdea = (idea) => {
-    setViewingIdea(idea);
+    // Ensure attachments are included
+    const ideaWithAttachments = {
+      ...idea,
+      attachments: idea.attachments || idea.rawSeed?.attachments || [],
+    };
+    
+    setViewingIdea(ideaWithAttachments);
     setViewFormData({
       title: idea.title,
       description: idea.content,
@@ -373,6 +380,30 @@ function SeedsDashboard() {
     }
 
     dispatch(deleteComment({ seedId: ideaId, commentId }));
+  };
+
+  // Handle media updates (upload/delete)
+  const handleMediaUpdate = (seedId, newAttachments) => {
+    // Update the viewing idea
+    if (viewingIdea && (viewingIdea._id === seedId || viewingIdea.id === seedId)) {
+      setViewingIdea(prev => ({
+        ...prev,
+        attachments: newAttachments,
+        rawSeed: { ...prev.rawSeed, attachments: newAttachments }
+      }));
+    }
+
+    // Update the active board's seeds
+    if (activeBoard?.seeds) {
+      setActiveBoard(prev => ({
+        ...prev,
+        seeds: prev.seeds.map(seed => 
+          (seed._id === seedId || seed.id === seedId)
+            ? { ...seed, attachments: newAttachments }
+            : seed
+        )
+      }));
+    }
   };
 
   const handleEditInView = () => {
@@ -949,6 +980,7 @@ function SeedsDashboard() {
               <IdeaEdit
                 setFormData={setIdeaFormData}
                 initialSeed={editingIdea}
+                onMediaUpdate={handleMediaUpdate}
               />
             </DialogContent>
 
@@ -1028,6 +1060,7 @@ function SeedsDashboard() {
             setNewComment={setNewComment}
             onAddComment={handleAddComment}
             onDeleteComment={handleDeleteComment}
+            onMediaUpdate={handleMediaUpdate}
           />
         </div>
       </div>

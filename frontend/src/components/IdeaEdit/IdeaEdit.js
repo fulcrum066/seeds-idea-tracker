@@ -1,4 +1,10 @@
 import React, { useState, useEffect } from "react";
+import { useDispatch } from "react-redux";
+import { Box, Button, Typography } from "@mui/material";
+import { CloudUpload as CloudUploadIcon } from "@mui/icons-material";
+import FileUpload from "../FileUpload/FileUpload";
+import AttachmentList from "../AttachmentList/AttachmentList";
+import { uploadSeedFiles, deleteSeedFile } from "../../features/media/mediaSlice";
 
 const METRICS = [
   { name: "maintainingCompliance", label: "Maintaining Compliance" },
@@ -11,7 +17,8 @@ const METRICS = [
 
 const RATING_OPTIONS = ["very high", "high", "medium", "low", "very low"];
 
-function IdeaEdit({ setFormData, initialSeed }) {
+function IdeaEdit({ setFormData, initialSeed, onMediaUpdate }) {
+  const dispatch = useDispatch();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("low");
@@ -23,12 +30,19 @@ function IdeaEdit({ setFormData, initialSeed }) {
     improvingProcesses: "medium",
     creatingNewRevenueStreams: "medium",
   });
+  
+  // Media upload states
+  const [attachments, setAttachments] = useState([]);
+  const [showUpload, setShowUpload] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (initialSeed) {
       setTitle(initialSeed.title || "");
       setDescription(initialSeed.description ?? initialSeed.content ?? "");
       setPriority((initialSeed.priority || "low").toLowerCase());
+      setAttachments(initialSeed.attachments || initialSeed.rawSeed?.attachments || []);
       setMetrics((prev) => ({
         ...prev,
         maintainingCompliance:
@@ -54,6 +68,68 @@ function IdeaEdit({ setFormData, initialSeed }) {
       ...metrics,
     });
   }, [title, description, priority, metrics, setFormData]);
+
+  // Handle file upload
+  const handleFileUpload = async () => {
+    if (selectedFiles.length === 0 || !initialSeed) return;
+
+    setUploading(true);
+    try {
+      const result = await dispatch(
+        uploadSeedFiles({
+          seedId: initialSeed._id || initialSeed.id,
+          files: selectedFiles,
+        })
+      ).unwrap();
+
+      // Update attachments list
+      if (result?.seed?.attachments) {
+        setAttachments(result.seed.attachments);
+        
+        // Notify parent to update its state
+        if (onMediaUpdate) {
+          onMediaUpdate(initialSeed._id || initialSeed.id, result.seed.attachments);
+        }
+      }
+
+      setSelectedFiles([]);
+      setShowUpload(false);
+    } catch (error) {
+      console.error("Upload failed:", error);
+      const errorMsg = error?.message || error || "Failed to upload files";
+      alert(`Upload error: ${errorMsg}. Please try again.`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Handle file delete
+  const handleDeleteFile = async (attachmentId) => {
+    if (!initialSeed || !window.confirm("Delete this file?")) return;
+
+    try {
+      const result = await dispatch(
+        deleteSeedFile({
+          seedId: initialSeed._id || initialSeed.id,
+          attachmentId,
+        })
+      ).unwrap();
+
+      // Update attachments list
+      if (result?.seed?.attachments) {
+        setAttachments(result.seed.attachments);
+        
+        // Notify parent to update its state
+        if (onMediaUpdate) {
+          onMediaUpdate(initialSeed._id || initialSeed.id, result.seed.attachments);
+        }
+      }
+    } catch (error) {
+      console.error("Delete failed:", error);
+      const errorMsg = error?.message || error || "Failed to delete file";
+      alert(`Delete error: ${errorMsg}. Please try again.`);
+    }
+  };
 
   // --- Same styles as before ---
   const containerStyle = {
@@ -174,13 +250,81 @@ function IdeaEdit({ setFormData, initialSeed }) {
         </div>
       </div>
 
-      {/* Right half stays exactly the same */}
+      {/* Right half - Media Management */}
       <div style={rightHalfStyle}>
-        <h3 style={labelStyle}>Seed Idea Number One</h3>
-        <label style={uploadBoxStyle}>
-          <input type="file" style={{ display: 'none' }} />
-          Click to upload media
-        </label>
+        <Box sx={{ width: '100%' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6" component="h3" sx={{ color: '#6a4026', fontWeight: 600, fontSize: '16px' }}>
+              Attachments
+            </Typography>
+            {initialSeed && (
+              <Button
+                variant="outlined"
+                startIcon={<CloudUploadIcon />}
+                onClick={() => setShowUpload(!showUpload)}
+                size="small"
+                sx={{ 
+                  borderColor: '#6a951f', 
+                  color: '#6a951f',
+                  fontSize: '11px',
+                  '&:hover': { borderColor: '#5a8010', backgroundColor: '#f0f7e8' }
+                }}
+              >
+                {showUpload ? 'Cancel' : 'Add Files'}
+              </Button>
+            )}
+          </Box>
+
+          {!initialSeed && (
+            <Box sx={{ p: 2, textAlign: 'center', color: 'text.secondary', border: '1px dashed #ccc', borderRadius: 1 }}>
+              <Typography variant="body2">
+                Save the seed first to upload files
+              </Typography>
+            </Box>
+          )}
+
+          {initialSeed && showUpload && (
+            <Box sx={{ mb: 2, p: 2, border: '1px solid #e0e0e0', borderRadius: 1, backgroundColor: '#fafafa' }}>
+              <FileUpload onFilesSelected={setSelectedFiles} />
+              {selectedFiles.length > 0 && (
+                <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+                  <Button
+                    variant="contained"
+                    onClick={handleFileUpload}
+                    disabled={uploading}
+                    size="small"
+                    sx={{ 
+                      backgroundColor: '#6a951f',
+                      fontSize: '11px',
+                      '&:hover': { backgroundColor: '#5a8010' }
+                    }}
+                  >
+                    {uploading ? 'Uploading...' : 'Upload'}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={() => {
+                      setSelectedFiles([]);
+                      setShowUpload(false);
+                    }}
+                    size="small"
+                    sx={{ fontSize: '11px' }}
+                  >
+                    Cancel
+                  </Button>
+                </Box>
+              )}
+            </Box>
+          )}
+
+          {initialSeed && (
+            <AttachmentList
+              attachments={attachments}
+              onDelete={handleDeleteFile}
+              canDelete={true}
+            />
+          )}
+        </Box>
       </div>
     </div>
   );

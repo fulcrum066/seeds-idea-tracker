@@ -1,4 +1,7 @@
+import { useState, useEffect } from "react";
+import { useDispatch } from "react-redux";
 import CloseIcon from "@mui/icons-material/Close";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import {
   Dialog,
   DialogTitle,
@@ -6,7 +9,12 @@ import {
   DialogActions,
   Button,
   IconButton,
+  Box,
+  Typography,
 } from "@mui/material";
+import FileUpload from "../FileUpload/FileUpload";
+import AttachmentList from "../AttachmentList/AttachmentList";
+import { uploadSeedFiles, deleteSeedFile } from "../../features/media/mediaSlice";
 
 const METRICS = [
   { name: "maintainingCompliance", label: "Maintaining Compliance" },
@@ -34,7 +42,79 @@ export default function SeedView({
   setNewComment,
   onAddComment,
   onDeleteComment,
+  onMediaUpdate, // New callback to update parent state
 }) {
+  const dispatch = useDispatch();
+  const [showUpload, setShowUpload] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [localAttachments, setLocalAttachments] = useState(viewingIdea?.attachments || []);
+
+  // Update local attachments when viewingIdea changes
+  useEffect(() => {
+    setLocalAttachments(viewingIdea?.attachments || viewingIdea?.rawSeed?.attachments || []);
+  }, [viewingIdea]);
+
+  const handleFileUpload = async () => {
+    if (selectedFiles.length === 0) return;
+
+    setUploading(true);
+    try {
+      const result = await dispatch(
+        uploadSeedFiles({
+          seedId: viewingIdea._id || viewingIdea.id,
+          files: selectedFiles,
+        })
+      ).unwrap();
+
+      // Update local state immediately
+      if (result?.seed?.attachments) {
+        setLocalAttachments(result.seed.attachments);
+        
+        // Notify parent to update its state
+        if (onMediaUpdate) {
+          onMediaUpdate(viewingIdea._id || viewingIdea.id, result.seed.attachments);
+        }
+      }
+
+      setSelectedFiles([]);
+      setShowUpload(false);
+    } catch (error) {
+      console.error("Upload failed:", error);
+      const errorMsg = error?.message || error || "Failed to upload files";
+      alert(`Upload error: ${errorMsg}. Please try again.`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteFile = async (attachmentId) => {
+    if (window.confirm("Delete this file?")) {
+      try {
+        const result = await dispatch(
+          deleteSeedFile({
+            seedId: viewingIdea._id || viewingIdea.id,
+            attachmentId,
+          })
+        ).unwrap();
+
+        // Update local state immediately
+        if (result?.seed?.attachments) {
+          setLocalAttachments(result.seed.attachments);
+          
+          // Notify parent to update its state
+          if (onMediaUpdate) {
+            onMediaUpdate(viewingIdea._id || viewingIdea.id, result.seed.attachments);
+          }
+        }
+      } catch (error) {
+        console.error("Delete failed:", error);
+        const errorMsg = error?.message || error || "Failed to delete file";
+        alert(`Delete error: ${errorMsg}. Please try again.`);
+      }
+    }
+  };
+
   if (!viewingIdea) return null;
 
   const labelStyle = {
@@ -257,22 +337,66 @@ export default function SeedView({
             ))}
           </div>
 
-          {/* Media section (placeholder) */}
+          {/* Media section - Always visible */}
           <div style={{ marginTop: 16 }}>
-            <div
-              style={{
-                padding: 20,
-                width: "100%",
-                textAlign: "center",
-                backgroundColor: "#fff",
-                color: "#666",
-                marginBottom: 10,
-                border: "1px dashed #ddd",
-                borderRadius: 4,
-              }}
-            >
-              No media uploaded for this seed
-            </div>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6" component="h3" sx={{ color: '#6a4026', fontWeight: 600 }}>
+                Attachments
+              </Typography>
+              {isEditingInView && (
+                <Button
+                  variant="outlined"
+                  startIcon={<CloudUploadIcon />}
+                  onClick={() => setShowUpload(!showUpload)}
+                  size="small"
+                  sx={{ 
+                    borderColor: '#6a951f', 
+                    color: '#6a951f',
+                    '&:hover': { borderColor: '#5a8010', backgroundColor: '#f0f7e8' }
+                  }}
+                >
+                  {showUpload ? 'Cancel' : 'Add Files'}
+                </Button>
+              )}
+            </Box>
+
+            {isEditingInView && showUpload && (
+              <Box sx={{ mb: 2, p: 2, border: '1px solid #e0e0e0', borderRadius: 1, backgroundColor: '#fafafa' }}>
+                <FileUpload onFilesSelected={setSelectedFiles} />
+                {selectedFiles.length > 0 && (
+                  <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+                    <Button
+                      variant="contained"
+                      onClick={handleFileUpload}
+                      disabled={uploading}
+                      size="small"
+                      sx={{ 
+                        backgroundColor: '#6a951f',
+                        '&:hover': { backgroundColor: '#5a8010' }
+                      }}
+                    >
+                      {uploading ? 'Uploading...' : 'Upload'}
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      onClick={() => {
+                        setSelectedFiles([]);
+                        setShowUpload(false);
+                      }}
+                      size="small"
+                    >
+                      Cancel
+                    </Button>
+                  </Box>
+                )}
+              </Box>
+            )}
+
+            <AttachmentList
+              attachments={localAttachments}
+              onDelete={isEditingInView ? handleDeleteFile : null}
+              canDelete={isEditingInView}
+            />
           </div>
 
           {/* Comments */}

@@ -26,6 +26,7 @@ app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/seeds", require("./routes/seedRoutes"));
 app.use("/api/tasks", require("./routes/taskRoutes"));
 app.use("/api/board", require("./routes/boardRoutes"));
+app.use("/api/media", require("./routes/mediaRoutes"));
 app.use("/api", require("./routes/searchRoutes"));
 
 
