@@ -11,6 +11,12 @@ import BoardCreate from "../../components/BoardCreate/BoardCreate";
 
 import axios from "axios";
 
+// ---------- Dialog Box ------
+import { getSeeds, createSeed, updateSeeds, deleteSeeds, modifySeed, toggleFavorite, addComment, deleteComment } from "../../features/seed/seedSlice";
+import IdeaEdit from "../../components/IdeaEdit/IdeaEdit";
+import SeedView from "../../components/SeedView/SeedView";
+import { useNavigate } from "react-router-dom";
+
 // ---------- Style ----------
 const styles = {
   container: { backgroundColor: "#F2C776", padding: "100px", minHeight: "100vh" },
@@ -91,6 +97,9 @@ const AdminPanel = () => {
   const [isEditingInView, setIsEditingInView] = useState(false);
   const [viewFormData, setViewFormData] = useState({});
   const [newComment, setNewComment] = useState('');
+  const [activeBoard, setActiveBoard] = useState(null); // currently selected board
+  const [boardLoading, setBoardLoading] = useState(false);
+  const [boardError, setBoardError] = useState("");
 
   // ---------- Board fetching ----------
   // Automatically retrieves all boards before any are loaded into the page
@@ -264,7 +273,45 @@ const AdminPanel = () => {
 
 
 
-  // ---------- Edit Idea -----------
+// Creates a new seed in the database
+  const handleCreateSeed = async (seedData) => {
+    const payload = activeBoard?._id ? { ...seedData, boardId: activeBoard._id } : seedData;
+    let tempId = `temp-${Date.now()}`;
+    if (activeBoard) {
+      setActiveBoard((b) => ({
+        ...b,
+        seeds: [...(b?.seeds ?? []), { ...payload, _id: tempId, isFavorite: false }],
+      }));
+    }
+    try {
+      const created = await dispatch(createSeed(payload)).unwrap();
+
+      if (activeBoard) {
+        setActiveBoard((b) => ({
+          ...b,
+          seeds: (b?.seeds ?? []).map((s) => (s._id === tempId ? created : s)),
+        }));
+      }
+    } catch (err) {
+      if (activeBoard) {
+        setActiveBoard((b) => ({
+          ...b,
+          seeds: (b?.seeds ?? []).filter((s) => s._id !== tempId),
+        }));
+      }
+      console.error("Create seed failed:", err);
+      alert("Could not create the idea.");
+    }
+  };
+
+
+  // Opens the create/edit popup for new idea
+  const handleOpenTestPopup = () => {
+    setEditingIdea(null);
+    setIdeaFormData({});
+    setOpenTestPopup(true);
+  };
+
   const handleEditIdea = (idea) => {
     setEditingIdea(idea);
     setIdeaFormData({
@@ -283,10 +330,8 @@ const AdminPanel = () => {
     setOpenTestPopup(true);
   };
 
-  // ---------- View Idea -----------
   const handleViewIdea = (idea) => {
     setViewingIdea(idea);
-    console.log("Accessed")
     setViewFormData({
       title: idea.title,
       description: idea.content,
@@ -298,6 +343,206 @@ const AdminPanel = () => {
     setIsEditingInView(false);
     setNewComment('');
     setOpenViewPopup(true);
+  }; 
+
+  //---- Diaglog Box ---- 
+  const { allSeeds, isLoading } = useSelector((state) => state.seeds);
+  const [selectedProject, setSelectedProject] = useState(0);
+
+  // Build project list from seed groups
+  const projects = useMemo(() => {
+    let projectList = [];
+
+    if (Array.isArray(allSeeds) && allSeeds.length > 0) {
+      const uniqueGroups = [
+        ...new Set(allSeeds.map((s) => s.group).filter(Boolean)),
+      ];
+      projectList = uniqueGroups.map((group, i) => ({
+        id: i,
+        name: `Project ${i + 1}`,
+        groupName: group,
+      }));
+    }
+
+
+    // Ensure at least 1 project exists
+    if (projectList.length < 1) {
+      projectList.push({
+        id: 0,
+        name: "Project 1",
+        groupName: "Project 1",
+      });
+    }
+
+    return projectList;
+  }, [allSeeds]);
+
+  const handleToggleFavorite = async (ideaId) => {
+    if (activeBoard?.seeds?.length) {
+      setActiveBoard((b) => ({
+        ...b,
+        seeds: b.seeds.map((s) =>
+          (s._id || s.id) === ideaId ? { ...s, isFavorite: !s.isFavorite } : s
+        ),
+      }));
+    }
+    if (viewingIdea && (viewingIdea._id || viewingIdea.id) === ideaId) {
+      setViewingIdea((v) => ({ ...v, isFavorite: !v.isFavorite }));
+    }
+
+    try {
+      await dispatch(toggleFavorite(ideaId)).unwrap();
+    } catch (err) {
+      // Roll back on failure
+      if (activeBoard?.seeds?.length) {
+        setActiveBoard((b) => ({
+          ...b,
+          seeds: b.seeds.map((s) =>
+            (s._id || s.id) === ideaId ? { ...s, isFavorite: !s.isFavorite } : s
+          ),
+        }));
+      }
+      if (viewingIdea && (viewingIdea._id || viewingIdea.id) === ideaId) {
+        setViewingIdea((v) => ({ ...v, isFavorite: !v.isFavorite }));
+      }
+      console.error("Toggle favourite failed:", err);
+      alert("Could not update favourite.");
+    }
+  };
+
+
+  const handleAddComment = (ideaId) => {
+    if (newComment.trim()) {
+      const commentData = {
+        text: newComment.trim(),
+        author: user?.name || 'Anonymous',
+        authorEmail: user?.email || '',
+        createdAt: new Date()
+      };
+
+      // Update local state immediately
+      if (viewingIdea && viewingIdea.id === ideaId) {
+        setViewingIdea({
+          ...viewingIdea,
+          comments: [...(viewingIdea.comments || []), commentData]
+        });
+      }
+
+      dispatch(addComment({ seedId: ideaId, commentData }));
+      setNewComment('');
+    }
+  };
+
+  const handleDeleteComment = (ideaId, commentId) => {
+    // Update local state immediately
+    if (viewingIdea && viewingIdea.id === ideaId) {
+      setViewingIdea({
+        ...viewingIdea,
+        comments: viewingIdea.comments.filter(comment => comment._id !== commentId)
+      });
+    }
+
+    dispatch(deleteComment({ seedId: ideaId, commentId }));
+  };
+
+  const handleEditInView = () => {
+    setIsEditingInView(true);
+  };
+
+  const handleSaveInView = async () => {
+    const cleanDescription = viewFormData.description?.trim();
+    const cleanTitle = viewFormData.title?.trim();
+
+    if (!cleanDescription || !cleanTitle) {
+      alert("Please enter both title and description");
+      return;
+    }
+
+    const currentProjectGroup = projects[selectedProject]?.groupName;
+
+    const updateData = {
+      _id: viewingIdea.id,
+      title: cleanTitle,
+      description: cleanDescription + (viewFormData.metric3 ? `||METRIC3:${viewFormData.metric3}` : ""),
+      creatorName: user?._id || null,
+      creatorEmail: user?.email || "",
+      group: currentProjectGroup || `Project ${selectedProject}`,
+      subGroup: viewFormData.metric1 || "",
+      type: viewFormData.metric2 || "",
+      priority: (viewFormData.priority || "low").toLowerCase(),
+    };
+
+    // Update the seed data
+    dispatch(modifySeed(updateData));
+    await dispatch(updateSeeds());
+
+    // Update the viewing idea with the new data
+    const updatedIdea = {
+      ...viewingIdea,
+      title: cleanTitle,
+      content: cleanDescription,
+      priority: viewFormData.priority || 'low',
+      metric1: viewFormData.metric1 || 'Not set',
+      metric2: viewFormData.metric2 || 'Not set',
+      metric3: viewFormData.metric3 || 'Not set'
+    };
+
+    setViewingIdea(updatedIdea);
+    setIsEditingInView(false);
+  };
+
+  const handleCancelEdit = () => {
+    setViewFormData({
+      title: viewingIdea.title,
+      description: viewingIdea.content,
+      priority: viewingIdea.priority || 'low',
+      metric1: viewingIdea.metric1 || '',
+      metric2: viewingIdea.metric2 || '',
+      metric3: viewingIdea.metric3 || ''
+    });
+    setIsEditingInView(false);
+  };
+  
+  // Deletes an idea after confirmation
+  const handleDeleteIdea = async (ideaId) => {
+    if (!window.confirm("Are you sure you want to delete this idea?")) return;
+
+    const prevBoard = activeBoard;
+    if (activeBoard?.seeds?.length) {
+      setActiveBoard((b) => ({
+        ...b,
+        seeds: b.seeds.filter((s) => (s._id || s.id) !== ideaId),
+      }));
+    }
+
+    if (viewingIdea && (viewingIdea._id || viewingIdea.id) === ideaId) {
+      handleCloseViewPopup();
+    }
+
+    try {
+      await dispatch(deleteSeeds([ideaId])).unwrap();
+    } catch (err) {
+      // Roll back on failure
+      setActiveBoard(prevBoard);
+      console.error("Delete failed:", err);
+      alert("Could not delete the idea.");
+    }
+  };
+
+  // Closes the create/edit dialog and resets state
+  const handleCloseTestPopup = () => {
+    setOpenTestPopup(false);
+    setEditingIdea(null);
+    setIdeaFormData({});
+  };
+
+  // Closes the view dialog and resets state
+  const handleCloseViewPopup = () => {
+    setOpenViewPopup(false);
+    setViewingIdea(null);
+    setIsEditingInView(false);
+    setViewFormData({});
+    setNewComment('');
   };
 
   // ---------- Render helpers ----------
@@ -514,6 +759,104 @@ const AdminPanel = () => {
           </DialogActions>
         </Dialog>
       </div>
+
+      <div>
+        <div>
+          {/* Dialog for popups */}
+          <Dialog open={openTestPopup} onClose={handleCloseTestPopup} maxWidth="md" fullWidth>
+            <DialogTitle>
+              {editingIdea ? "Edit Idea" : "Create New Idea"}
+              <IconButton
+                aria-label="close"
+                onClick={handleCloseTestPopup}
+                sx={{ position: "absolute", right: 8, top: 8 }}
+              >
+                <CloseIcon />
+              </IconButton>
+            </DialogTitle>
+
+            <DialogContent dividers>
+              <IdeaEdit setFormData={setIdeaFormData} user={user} />
+            </DialogContent>
+
+            <DialogActions>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => {
+                  const cleanDescription = (ideaFormData.description || "").trim();
+                  const cleanTitle = (ideaFormData.title || "").trim();
+
+                  if (!cleanDescription) {
+                    alert("Please enter a description");
+                    return;
+                  }
+                  if (!cleanTitle) {
+                    alert("Please enter a title");
+                    return;
+                  }
+
+                  // prefer activeBoard projectName as the group, otherwise fall back to selected project group
+                  const currentProjectGroup = activeBoard?.projectName || projects[selectedProject]?.groupName || `Project ${selectedProject}`;
+
+                  // Data to be used in backend
+                  const seedData = {
+                    title: cleanTitle,
+                    creatorName: user?._id || null,
+                    creatorEmail: user?.email || "",
+                    group: currentProjectGroup,
+                    boardId: activeBoard?._id,
+                    metric1: ideaFormData.metric1 || "",
+                    metric2: ideaFormData.metric2 || "",
+                    metric3: ideaFormData.metric3 || "",
+                    metric4: ideaFormData.metric4 || "",
+                    metric5: ideaFormData.metric5 || "",
+                    metric6: ideaFormData.metric6 || "",
+                    metric7: ideaFormData.metric7 || "",
+                    metric8: ideaFormData.metric8 || "",
+                    priority: (ideaFormData.priority || "low").toLowerCase(),
+                    status: "pending",
+                    description:
+                      cleanDescription +
+                      (ideaFormData.metric3 ? `||METRIC3:${ideaFormData.metric3}` : ""),
+                  };
+
+                  if (editingIdea) {
+                    const updateData = { ...seedData, _id: editingIdea.id };
+                    dispatch(modifySeed(updateData));
+                    dispatch(updateSeeds());
+                  } else {
+                    handleCreateSeed(seedData);
+                  }
+
+                  handleCloseTestPopup();
+                }}
+              >
+                {editingIdea ? "Update Idea" : "Save & Exit"}
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/*Dialog for viewing seed idea*/}
+          <SeedView
+            open={openViewPopup}
+            onClose={handleCloseViewPopup}
+            viewingIdea={viewingIdea}
+            isEditingInView={isEditingInView}
+            setIsEditingInView={setIsEditingInView}
+            viewFormData={viewFormData}
+            setViewFormData={setViewFormData}
+            onSaveInView={handleSaveInView}
+            onCancelEdit={handleCancelEdit}
+            onToggleFavorite={handleToggleFavorite}
+            newComment={newComment}
+            setNewComment={setNewComment}
+            onAddComment={handleAddComment}
+            onDeleteComment={handleDeleteComment}
+          />
+        </div>
+      </div>
+      <TopBar />
     </>
   );
 };

@@ -939,7 +939,7 @@ function SeedsDashboard() {
             onDeleteComment={handleDeleteComment}
           />
         </div>
-      </div>32
+      </div>
     </>
   );
 }
