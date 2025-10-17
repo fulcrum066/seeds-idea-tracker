@@ -24,9 +24,8 @@ app.use(cors());
 // Routes
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/seeds", require("./routes/seedRoutes"));
-app.use("/api/tasks", require("./routes/taskRoutes"));
 app.use("/api/board", require("./routes/boardRoutes"));
-app.use("/api", require("./routes/searchRoutes"));
+app.use("/api/observer", require("./routes/observerRoutes"));
 
 
 // Serve frontend in production

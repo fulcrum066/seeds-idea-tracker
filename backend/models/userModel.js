@@ -24,7 +24,7 @@ const userSchema = mongoose.Schema(
     supervisor: {type: mongoose.Schema.Types.ObjectId, required: false, ref: "User"},
     password: {type: String, required: [true, "Please add a password"]},
     roles: {type: Array, required: [true, "Please add a role"]},
-    boards: [{ type: mongoose.Schema.Types.ObjectId, ref: "Board" }]
+    boards: {type: Array}
   },
   {
     timestamps: true,

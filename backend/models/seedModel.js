@@ -15,22 +15,14 @@ const seedSchema = new Schema({
   metric6: { type: String },
   metric7: { type: String },
   metric8: { type: String },
-  metricScore: { type: Number, default: 0 },
+  // weeksLeadTime: { type: Number },
   priority: { type: String, enum: ["low", "medium", "high"] },
+  // userAssigned: { type: Schema.Types.ObjectId, ref: "User" },
+  // startTime: { type: Date },
+  // expectedEndTime: { type: Date },
+  // completionDate: { type: Date },
   status: { type: String },
-  isFavorite: { type: Boolean, default: false },
-  comments: [{
-    text: { type: String, required: true },
-    author: { type: String, required: true },
-    authorEmail: { type: String },
-    createdAt: { type: Date, default: Date.now }
-  }]
 });
-
-seedSchema.index(
-  { title: "text", description: "text" },
-  { name: "seed_text_index", weights: { title: 5, description: 1 } }
-);
 
 const Seed = mongoose.model("Seed", seedSchema);
 
