@@ -3,9 +3,11 @@
     "start": "node backend/server.js",
     "server": "nodemon backend/server.js",
     "client": "cd frontend && npm start",
-    "dev": "concurrently \"npm run server\" \"npm run client\" "
+    "dev": "concurrently \"npm run server\" \"npm run client\" ",
+    "test-supabase": "node backend/test-supabase.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
     "bcryptjs": "^3.0.2",
     "colors": "^1.4.0",
     "concurrently": "^9.1.2",
@@ -14,9 +16,15 @@
     "express": "^4.21.2",
     "express-async-handler": "^1.2.0",
     "jsonwebtoken": "^9.0.2",
+    "mongodb": "6.11.0",
     "mongoose": "^8.13.0",
+    "multer": "^2.0.0-rc.4",
     "nodemon": "^3.1.9",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "react-scripts": "^0.0.0"
+  },
+  "resolutions": {
+    "mongodb": "6.11.0"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.21",
