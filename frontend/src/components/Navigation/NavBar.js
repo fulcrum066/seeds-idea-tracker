@@ -47,7 +47,7 @@ function TopBar() {
               </Link>
             </td>
             <td>
-              <Link to="[PLACEHOLDER]" className="nav-button">
+              <Link to="/settings" className="nav-button">
                 <img alt="icon" src="/dashboard_images/Settings.png" className="img" />
                 <span>Settings</span>
               </Link>
