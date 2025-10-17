@@ -30,7 +30,7 @@ const getAllTasks = asyncHandler(async (req, res) => {
 // @route   POST /api/tasks
 // @access  Private
 const createTask = asyncHandler(async (req, res) => {
-  const { taskName, subTaskCategory, startDate, dueDate, timeDue, seedId, createdBy } = req.body;
+  const { taskName, subTaskCategory, dueDate, timeDue, seedId, createdBy } = req.body;
 
   // Validate required fields
   if (!taskName || !seedId || !createdBy) {
@@ -48,7 +48,6 @@ const createTask = asyncHandler(async (req, res) => {
   const newTask = new Task({
     taskName,
     subTaskCategory,
-    startDate,
     dueDate,
     timeDue,
     seedId,
@@ -72,7 +71,7 @@ const createTask = asyncHandler(async (req, res) => {
 // @access  Private
 const updateTaskById = asyncHandler(async (req, res) => {
   const taskId = req.params.id;
-  const { taskName, subTaskCategory, startDate, dueDate, timeDue } = req.body;
+  const { taskName, subTaskCategory, dueDate, timeDue } = req.body;
 
   const existingTask = await Task.findById(taskId);
 
@@ -86,7 +85,6 @@ const updateTaskById = asyncHandler(async (req, res) => {
     {
       taskName,
       subTaskCategory,
-      startDate,
       dueDate,
       timeDue
     },

@@ -1,5 +1,4 @@
 // backend/metric/metric.js
-const roi = require("./roi");
 
 // Map categorical strings to a 1–5 score
 const CATEGORY_MAP = new Map([
@@ -27,28 +26,21 @@ function catTo5(value) {
   return CATEGORY_MAP.get(key) ?? null;
 }
 
-// Convert ROI % into a 1–5 band (tweak thresholds to your policy)
-function roiPctTo5(roiPct) {
-  if (!Number.isFinite(roiPct)) return null;
-  if (roiPct <= 0)    return 1;   // losing/neutral
-  if (roiPct <= 50)   return 2;
-  if (roiPct <= 100)  return 3;
-  if (roiPct <= 200)  return 4;
-  return 5;                         // >200%
-}
-
 /**
  * Weighted scoring table.
  *
  * Options:
- * - mode: 'sum'      -> returns raw weighted sum of 1–5 values (e.g., 284)
- * - mode: 'average'  -> returns weighted average on a 0–scale range (default scale=100 => % like 0–100)
+ * - mode: 'sum'      -> returns raw weighted sum of 1–5 values
+ * - mode: 'average'  -> returns weighted average on a 0–scale range (default scale=100)
  * - scale: number    -> only used when mode='average' (default 100)
  *
  * Mapping of metrics -> weights:
- * - metric1+metric2 => ROI block -> weight1
- * - metric3..metric7 => categorical -> weight2..weight6
- * - metric8 (optional) => categorical -> weight7 (if present)
+ * - maintainingCompliance -> weight1
+ * - reducingCost -> weight2
+ * - reducingRisk -> weight3
+ * - improvingProductivity -> weight4
+ * - improvingProcesses -> weight5
+ * - creatingNewRevenueStreams -> weight6
  */
 function calculateMetricScore(seedLike, boardLike, { mode = "average", scale = 100 } = {}) {
   const weights = {
@@ -58,37 +50,21 @@ function calculateMetricScore(seedLike, boardLike, { mode = "average", scale = 1
     w4: toNum(boardLike?.weight4, 0),
     w5: toNum(boardLike?.weight5, 0),
     w6: toNum(boardLike?.weight6, 0),
-    w7: toNum(boardLike?.weight7, 0),
-    w8: toNum(boardLike?.weight8, 0), // harmless if unused
+    w7: toNum(boardLike?.weight7, 0), // Kept for potential future use
+    w8: toNum(boardLike?.weight8, 0), // Kept for potential future use
   };
-
-  // --- ROI (metric1, metric2) -> 1..5 band ---
-  let roiPct = null;
-  try {
-    const m1 = seedLike?.metric1;
-    const m2 = seedLike?.metric2;
-    if (m1 != null || m2 != null) {
-      roiPct = (m1 != null && m2 != null) ? roi.calculateROI(m1, m2) : Number(m1);
-    }
-  } catch {
-    roiPct = null;
-  }
-  const roi5 = roiPct == null ? null : roiPctTo5(roiPct);
 
   // --- Categorical metrics -> 1..5 ---
   const cats = [
-    { v: catTo5(seedLike?.metric3), w: weights.w2 },
-    { v: catTo5(seedLike?.metric4), w: weights.w3 },
-    { v: catTo5(seedLike?.metric5), w: weights.w4 },
-    { v: catTo5(seedLike?.metric6), w: weights.w5 },
-    { v: catTo5(seedLike?.metric7), w: weights.w6 },
-    { v: catTo5(seedLike?.metric8), w: weights.w7 }, // if you use weight8, shift this to w8
+    { v: catTo5(seedLike?.maintainingCompliance), w: weights.w1 },
+    { v: catTo5(seedLike?.reducingCost), w: weights.w2 },
+    { v: catTo5(seedLike?.reducingRisk), w: weights.w3 },
+    { v: catTo5(seedLike?.improvingProductivity), w: weights.w4 },
+    { v: catTo5(seedLike?.improvingProcesses), w: weights.w5 },
+    { v: catTo5(seedLike?.creatingNewRevenueStreams), w: weights.w6 },
   ];
 
-  const entries = [
-    { v: roi5, w: weights.w1 },
-    ...cats,
-  ].filter(({ v, w }) => v != null && w > 0);
+  const entries = cats.filter(({ v, w }) => v != null && w > 0);
 
   if (entries.length === 0) return 0;
 
@@ -108,5 +84,4 @@ function calculateMetricScore(seedLike, boardLike, { mode = "average", scale = 1
 module.exports = {
   calculateMetricScore,
   catTo5,
-  roiPctTo5,
 };

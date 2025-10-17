@@ -71,7 +71,12 @@ const createSeed = asyncHandler(async (req, res) => {
     creatorEmail,
     dateRecorded,
     boardId,
-    metric1, metric2, metric3, metric4, metric5, metric6, metric7, metric8,
+    maintainingCompliance,
+    reducingCost,
+    reducingRisk,
+    improvingProductivity,
+    improvingProcesses,
+    creatingNewRevenueStreams,
     priority,
     status,
     isFavorite,
@@ -91,10 +96,16 @@ const createSeed = asyncHandler(async (req, res) => {
     }
   }
 
-  const metricScore = calculateMetricScore(
-    { metric1, metric2, metric3, metric4, metric5, metric6, metric7, metric8 },
-    board
-  );
+  const metricData = {
+    maintainingCompliance,
+    reducingCost,
+    reducingRisk,
+    improvingProductivity,
+    improvingProcesses,
+    creatingNewRevenueStreams,
+  };
+
+  const metricScore = calculateMetricScore(metricData, board);
 
   const newSeed = new Seed({
     title,
@@ -102,7 +113,7 @@ const createSeed = asyncHandler(async (req, res) => {
     creatorName,
     creatorEmail,
     dateRecorded,
-    metric1, metric2, metric3, metric4, metric5, metric6, metric7, metric8,
+    ...metricData,
     metricScore,
     priority,
     status,
@@ -140,7 +151,12 @@ const updateSeedById = asyncHandler(async (req, res) => {
     creatorEmail,
     dateRecorded,
     boardId, // optional; if absent we fall back to the board containing this seed
-    metric1, metric2, metric3, metric4, metric5, metric6, metric7, metric8,
+    maintainingCompliance,
+    reducingCost,
+    reducingRisk,
+    improvingProductivity,
+    improvingProcesses,
+    creatingNewRevenueStreams,
     priority,
     status,
     isFavorite,
@@ -157,14 +173,12 @@ const updateSeedById = asyncHandler(async (req, res) => {
 
   // Merge new metrics with existing values
   const merged = {
-    metric1: metric1 ?? existingSeed.metric1,
-    metric2: metric2 ?? existingSeed.metric2,
-    metric3: metric3 ?? existingSeed.metric3,
-    metric4: metric4 ?? existingSeed.metric4,
-    metric5: metric5 ?? existingSeed.metric5,
-    metric6: metric6 ?? existingSeed.metric6,
-    metric7: metric7 ?? existingSeed.metric7,
-    metric8: metric8 ?? existingSeed.metric8,
+    maintainingCompliance: maintainingCompliance ?? existingSeed.maintainingCompliance,
+    reducingCost: reducingCost ?? existingSeed.reducingCost,
+    reducingRisk: reducingRisk ?? existingSeed.reducingRisk,
+    improvingProductivity: improvingProductivity ?? existingSeed.improvingProductivity,
+    improvingProcesses: improvingProcesses ?? existingSeed.improvingProcesses,
+    creatingNewRevenueStreams: creatingNewRevenueStreams ?? existingSeed.creatingNewRevenueStreams,
   };
 
   const metricScore = calculateMetricScore(merged, board);
