@@ -28,7 +28,7 @@ const cardData = [
     actionText: "Manage account",
   },
   {
-    link: "/userHomepage",
+    link: "/dashboard/seed",
     image: "/images/icons/seeds.svg",
     title: "Seeds",
     description: "Add, view and grow ideas for the business here.",
