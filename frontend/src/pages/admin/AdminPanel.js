@@ -57,6 +57,16 @@ const styles = {
   iconButton: (bg) => ({ padding: "8px", marginRight: "5px", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "16px", color: "#fff", backgroundColor: bg }),
 };
 
+// ---------- helpers ----------
+const idOf = (x) => String(typeof x === "string" ? x : x?._id);
+const toId = (x) => {
+  if (!x) return "";
+  if (typeof x === "string") return x;
+  if (x._id) return String(x._id);
+  try { return String(x); } catch { return ""; }
+};
+const uniq = (arr) => Array.from(new Set(arr.map(String)));
+
 const AdminPanel = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
@@ -98,70 +108,117 @@ const AdminPanel = () => {
   useEffect(() => { if (token) refreshBoards(); }, [token, refreshBoards]);
 
   // ---------- User fetching ----------
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setUsersLoading(true);
-        const list = await authService.getUser(token); // returns ALL users
-        setUsers(Array.isArray(list) ? list : []);
-      } catch (err) {
-        setUsersError(err?.response?.data?.message || err.message || "Failed to load users");
-      } finally {
-        setUsersLoading(false);
-      }
-    };
-    if (token) fetchUsers();
+  const refreshUsers = useCallback(async () => {
+    try {
+      setUsersLoading(true);
+      const list = await authService.getUser(token); // returns ALL users (with boards)
+      setUsers(Array.isArray(list) ? list : []);
+    } catch (err) {
+      setUsersError(err?.response?.data?.message || err.message || "Failed to load users");
+    } finally {
+      setUsersLoading(false);
+    }
   }, [token]);
 
-  // ---------- User/Board Management ----------
-  const handleUserBoardUpdate = async (boardId, action) => {
+  useEffect(() => { if (token) refreshUsers(); }, [token, refreshUsers]);
+
+  // Helper: get CURRENT boards for a userId (from state; if missing, fetch once)
+  const getCurrentBoardsForUser = useCallback(
+    async (userId) => {
+      const local = users.find((u) => String(u._id) === String(userId));
+      if (local) return (local.boards || []).map(toId).filter(Boolean);
+
+      // Fallback: one-time fresh fetch (avoid state race)
+      const fresh = await authService.getUser(token);
+      const match = Array.isArray(fresh) ? fresh.find((u) => String(u._id) === String(userId)) : null;
+      return (match?.boards || []).map(toId).filter(Boolean);
+    },
+    [users, token]
+  );
+
+  // ---------- TWO-SIDED ADD ----------
+  const addUserTwoSided = async (boardId) => {
     if (!emailInput) return alert("Please enter an email.");
+    if (!boardId) return alert("Please select a board.");
+    const email = emailInput.trim();
+
     try {
-      const email = emailInput.trim();
-      const userData = await authService.getUserByEmail(email, token);
-      if (!userData?._id) return alert("User not found");
+      // 1) Resolve user ID by email (this endpoint returns ONLY {_id})
+      const light = await authService.getUserByEmail(email, token);
+      const userId = idOf(light);
+      if (!userId) return alert("User not found.");
 
-      const userId = String(userData._id);
-      const board = boards.find((b) => String(b._id) === String(boardId));
-      if (!board) return alert("Board not found");
+      const board = boards.find((b) => idOf(b._id) === String(boardId));
+      if (!board) return alert("Board not found.");
 
-      // Normalize board.users to IDs
-      const currentUserIds = (board.users || []).map((u) =>
-        String(typeof u === "string" ? u : u._id)
-      );
+      // 2) Update BOARD.users (idempotent)
+      const prevBoardUserIds = (board.users || []).map(idOf);
+      if (prevBoardUserIds.includes(userId)) {
+        alert("User is already on this board.");
+        return;
+      }
+      const nextBoardUserIds = uniq([...prevBoardUserIds, userId]);
+      await updateBoard(token, boardId, { ...board, users: nextBoardUserIds });
 
-      let updatedUserIds;
-      if (action === "add") {
-        if (currentUserIds.includes(userId)) {
-          alert("User already in board");
-          return;
-        }
-        updatedUserIds = [...currentUserIds, userId];
-      } else if (action === "remove") {
-        updatedUserIds = currentUserIds.filter((id) => id !== userId);
-      } else {
-        return alert("Unknown action");
+      // 3) Update USER.boards using the REAL current boards (not the light response)
+      const prevUserBoards = await getCurrentBoardsForUser(userId);
+      const nextUserBoards = uniq([...prevUserBoards, String(boardId)]);
+
+      try {
+        await authService.updateUser({ _id: userId, boards: nextUserBoards }, token);
+      } catch (userErr) {
+        // rollback board change if user update fails
+        await updateBoard(token, boardId, { ...board, users: prevBoardUserIds });
+        throw userErr;
       }
 
-      // 1) Update the board with pure IDs
-      await updateBoard(token, boardId, { ...board, users: updatedUserIds });
-
-      // 2) Update the user's boards as IDs
-      const currentBoards = (userData.boards || []).map((id) => String(id));
-      const updatedBoards =
-        action === "add"
-          ? [...new Set([...currentBoards, String(boardId)])]
-          : currentBoards.filter((id) => String(id) !== String(boardId));
-
-      await authService.updateUser(
-        { ...userData, boards: updatedBoards, _id: userId },
-        token
-      );
-
-      await refreshBoards();
-      alert(`User ${action === "add" ? "added to" : "removed from"} board!`);
+      await Promise.all([refreshBoards(), refreshUsers()]);
+      alert("User added to board and board added to user.");
     } catch (e) {
-      alert(e?.response?.data?.message || e.message || "Failed to update user");
+      alert(e?.response?.data?.message || e.message || "Failed to add user.");
+    }
+  };
+
+  // ---------- TWO-SIDED REMOVE ----------
+  const removeUserTwoSided = async (boardId) => {
+    if (!emailInput) return alert("Please enter an email.");
+    if (!boardId) return alert("Please select a board.");
+    const email = emailInput.trim();
+
+    try {
+      // 1) Resolve user ID by email (light response)
+      const light = await authService.getUserByEmail(email, token);
+      const userId = idOf(light);
+      if (!userId) return alert("User not found.");
+
+      const board = boards.find((b) => idOf(b._id) === String(boardId));
+      if (!board) return alert("Board not found.");
+
+      // 2) Update BOARD.users
+      const prevBoardUserIds = (board.users || []).map(idOf);
+      if (!prevBoardUserIds.includes(userId)) {
+        alert("User is not currently on this board.");
+        return;
+      }
+      const nextBoardUserIds = prevBoardUserIds.filter((id) => id !== userId);
+      await updateBoard(token, boardId, { ...board, users: nextBoardUserIds });
+
+      // 3) Update USER.boards from real current boards
+      const prevUserBoards = await getCurrentBoardsForUser(userId);
+      const nextUserBoards = prevUserBoards.filter((id) => id !== String(boardId));
+
+      try {
+        await authService.updateUser({ _id: userId, boards: nextUserBoards }, token);
+      } catch (userErr) {
+        // rollback board change if user update fails
+        await updateBoard(token, boardId, { ...board, users: prevBoardUserIds });
+        throw userErr;
+      }
+
+      await Promise.all([refreshBoards(), refreshUsers()]);
+      alert("User removed from board and board removed from user.");
+    } catch (e) {
+      alert(e?.response?.data?.message || e.message || "Failed to remove user.");
     }
   };
 
@@ -233,7 +290,7 @@ const AdminPanel = () => {
   );
 
   const renderUsersSection = () => {
-    const board = boards.find((b) => b._id === selectedBoardId);
+    const board = boards.find((b) => String(b._id) === String(selectedBoardId));
 
     const rows = (board?.users || [])
       .map((entry) => {
@@ -287,7 +344,7 @@ const AdminPanel = () => {
           </tbody>
         </table>
 
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: "15px" }}>
+        <div style={{ display: "flex", gap: 12, alignItems: "center", marginTop: 15 }}>
           <input
             type="email"
             placeholder="Enter user email"
@@ -297,13 +354,15 @@ const AdminPanel = () => {
           />
           <button
             style={styles.addButton}
-            onClick={() => handleUserBoardUpdate(selectedBoardId, "add")}
+            onClick={() => addUserTwoSided(selectedBoardId)}
+            title="Adds user to Board.users and adds board to User.boards (with rollback on error)"
           >
             Add User
           </button>
           <button
             style={styles.removeButton}
-            onClick={() => handleUserBoardUpdate(selectedBoardId, "remove")}
+            onClick={() => removeUserTwoSided(selectedBoardId)}
+            title="Removes user from Board.users and removes board from User.boards (with rollback on error)"
           >
             Remove User
           </button>
@@ -325,7 +384,6 @@ const AdminPanel = () => {
               onChange={(e) => setSelectedBoardId(e.target.value)}
               style={{ padding: "10px 12px", borderRadius: "8px", border: "2px solid #523629" }}
             >
-              {/* <option value="">-- Select a board --</option> */}
               {boards.map((b) => (
                 <option key={b._id} value={b._id}>
                   {b.projectName || b.name}

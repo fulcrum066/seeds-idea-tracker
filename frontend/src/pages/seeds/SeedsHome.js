@@ -19,6 +19,8 @@ function SeedsDashboard() {
   const { allSeeds, isLoading } = useSelector((state) => state.seeds);
   const { user, isLoading: isUserLoading } = useSelector((state) => state.auth);
 
+  const isAdmin = user?.roles?.includes("admin");
+
   // boards state
   const [boards, setBoards] = useState([]); // all boards the user has access to
   const [activeBoard, setActiveBoard] = useState(null); // currently selected board
@@ -532,23 +534,25 @@ function SeedsDashboard() {
               </h1>
 
               {/* Admin panel button */}
-              <button
-                onClick={() => navigate("/admin")}
-                style={{
-                  width: "100%",
-                  backgroundColor: "#6a951f",
-                  color: "white",
-                  padding: "8px 12px",
-                  borderRadius: "6px",
-                  border: "none",
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                  marginBottom: "16px",
-                  cursor: "pointer",
-                }}
-              >
-                ADMIN PANEL
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => navigate("/admin")}
+                  style={{
+                    width: "100%",
+                    backgroundColor: "#6a951f",
+                    color: "white",
+                    padding: "8px 12px",
+                    borderRadius: "6px",
+                    border: "none",
+                    fontSize: "12px",
+                    fontWeight: "bold",
+                    marginBottom: "16px",
+                    cursor: "pointer",
+                  }}
+                >
+                  ADMIN PANEL
+                </button>
+              )}
 
               {/* Board summary (NEW) */}
               {boardError && (
