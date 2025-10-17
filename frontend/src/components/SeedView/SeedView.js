@@ -1,14 +1,31 @@
-// src/components/SeedView/SeedView.js
-import React from "react";
+import { useState, useEffect } from "react";
+import { useDispatch } from "react-redux";
+import CloseIcon from "@mui/icons-material/Close";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import {
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  IconButton,
   Button,
+  IconButton,
+  Box,
+  Typography,
 } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
+import FileUpload from "../FileUpload/FileUpload";
+import AttachmentList from "../AttachmentList/AttachmentList";
+import { uploadSeedFiles, deleteSeedFile } from "../../features/media/mediaSlice";
+
+const METRICS = [
+  { name: "maintainingCompliance", label: "Maintaining Compliance" },
+  { name: "reducingCost", label: "Reducing Cost" },
+  { name: "reducingRisk", label: "Reducing Risk" },
+  { name: "improvingProductivity", label: "Improving Productivity" },
+  { name: "improvingProcesses", label: "Improving Processes" },
+  { name: "creatingNewRevenueStreams", label: "Creating New Revenue Streams" },
+];
+
+const RATING_OPTIONS = ["very high", "high", "medium", "low", "very low"];
 
 export default function SeedView({
   open,
@@ -25,7 +42,79 @@ export default function SeedView({
   setNewComment,
   onAddComment,
   onDeleteComment,
+  onMediaUpdate, // New callback to update parent state
 }) {
+  const dispatch = useDispatch();
+  const [showUpload, setShowUpload] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [localAttachments, setLocalAttachments] = useState(viewingIdea?.attachments || []);
+
+  // Update local attachments when viewingIdea changes
+  useEffect(() => {
+    setLocalAttachments(viewingIdea?.attachments || viewingIdea?.rawSeed?.attachments || []);
+  }, [viewingIdea]);
+
+  const handleFileUpload = async () => {
+    if (selectedFiles.length === 0) return;
+
+    setUploading(true);
+    try {
+      const result = await dispatch(
+        uploadSeedFiles({
+          seedId: viewingIdea._id || viewingIdea.id,
+          files: selectedFiles,
+        })
+      ).unwrap();
+
+      // Update local state immediately
+      if (result?.seed?.attachments) {
+        setLocalAttachments(result.seed.attachments);
+        
+        // Notify parent to update its state
+        if (onMediaUpdate) {
+          onMediaUpdate(viewingIdea._id || viewingIdea.id, result.seed.attachments);
+        }
+      }
+
+      setSelectedFiles([]);
+      setShowUpload(false);
+    } catch (error) {
+      console.error("Upload failed:", error);
+      const errorMsg = error?.message || error || "Failed to upload files";
+      alert(`Upload error: ${errorMsg}. Please try again.`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteFile = async (attachmentId) => {
+    if (window.confirm("Delete this file?")) {
+      try {
+        const result = await dispatch(
+          deleteSeedFile({
+            seedId: viewingIdea._id || viewingIdea.id,
+            attachmentId,
+          })
+        ).unwrap();
+
+        // Update local state immediately
+        if (result?.seed?.attachments) {
+          setLocalAttachments(result.seed.attachments);
+          
+          // Notify parent to update its state
+          if (onMediaUpdate) {
+            onMediaUpdate(viewingIdea._id || viewingIdea.id, result.seed.attachments);
+          }
+        }
+      } catch (error) {
+        console.error("Delete failed:", error);
+        const errorMsg = error?.message || error || "Failed to delete file";
+        alert(`Delete error: ${errorMsg}. Please try again.`);
+      }
+    }
+  };
+
   if (!viewingIdea) return null;
 
   const labelStyle = {
@@ -44,6 +133,7 @@ export default function SeedView({
     fontSize: "14px",
     backgroundColor: "#fff",
     minHeight: "20px",
+    textTransform: "capitalize",
   };
 
   const inputStyle = {
@@ -68,7 +158,7 @@ export default function SeedView({
 
         {/* Favorite toggle pill */}
         <div
-          onClick={() => onToggleFavorite(viewingIdea.id)}
+          onClick={() => onToggleFavorite(viewingIdea._id || viewingIdea.id)}
           role="button"
           aria-label="toggle-favorite"
           style={{
@@ -159,7 +249,7 @@ export default function SeedView({
                 />
               ) : (
                 <div style={{ ...readonlyBox, minHeight: 100 }}>
-                  {viewingIdea.content}
+                  {viewingIdea.content || viewingIdea.description}
                 </div>
               )}
 
@@ -189,25 +279,27 @@ export default function SeedView({
             {/* Right column */}
             <div style={{ flex: 1, minWidth: 240 }}>
               <label style={labelStyle}>Creator:</label>
-              <div style={readonlyBox}>
-                {viewingIdea.creatorName || "Unknown"}
+                  <div style={readonlyBox}>
+                    {viewingIdea.creatorName || viewingIdea.rawSeed?.creatorName || "Unknown"}
               </div>
 
               <label style={labelStyle}>Creator Email:</label>
-              <div style={readonlyBox}>
-                {viewingIdea.creatorEmail || "Unknown"}
+                  <div style={readonlyBox}>
+                    {viewingIdea.creatorEmail || viewingIdea.rawSeed?.creatorEmail || "Unknown"}
               </div>
 
               <label style={labelStyle}>Created:</label>
               <div style={readonlyBox}>
-                {viewingIdea.createdAt
-                  ? new Date(viewingIdea.createdAt).toLocaleString()
+                    {viewingIdea.dateRecorded
+                  ? new Date(viewingIdea.dateRecorded).toLocaleString()
+                  : viewingIdea.rawSeed?.dateRecorded
+                  ? new Date(viewingIdea.rawSeed.dateRecorded).toLocaleString()
                   : "Unknown"}
               </div>
             </div>
           </div>
 
-          {/* “Metrics” / extra fields (1–5 demo) */}
+          {/* “Metrics” / extra fields */}
           <div
             style={{
               marginTop: 14,
@@ -216,50 +308,95 @@ export default function SeedView({
               gap: 10,
             }}
           >
-            {["metric1", "metric2", "metric3", "metric4", "metric5"].map(
-              (key) => (
-                <div key={key}>
-                  <label style={labelStyle}>
-                    {key.replace("metric", "Metric Data ")}
-                  </label>
-                  {isEditingInView ? (
-                    <input
-                      type="text"
-                      value={viewFormData[key] || ""}
-                      onChange={(e) =>
-                        setViewFormData({
-                          ...viewFormData,
-                          [key]: e.target.value,
-                        })
-                      }
-                      style={inputStyle}
-                    />
-                  ) : (
-                    <div style={readonlyBox}>
-                      {viewingIdea[key] || "Not set"}
-                    </div>
-                  )}
-                </div>
-              )
-            )}
+            {METRICS.map((metric) => (
+              <div key={metric.name}>
+                <label style={labelStyle}>{metric.label}</label>
+                {isEditingInView ? (
+                  <select
+                    style={inputStyle}
+                    value={viewFormData[metric.name] || "medium"}
+                    onChange={(e) =>
+                      setViewFormData({
+                        ...viewFormData,
+                        [metric.name]: e.target.value,
+                      })
+                    }
+                  >
+                    {RATING_OPTIONS.map((option) => (
+                      <option key={option} value={option} style={{ textTransform: "capitalize" }}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div style={readonlyBox}>
+                    {viewingIdea[metric.name] || viewingIdea.rawSeed?.[metric.name] || "Not set"}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
 
-          {/* Media section (placeholder) */}
+          {/* Media section - Always visible */}
           <div style={{ marginTop: 16 }}>
-            <div
-              style={{
-                padding: 20,
-                width: "100%",
-                textAlign: "center",
-                backgroundColor: "#fff",
-                color: "#666",
-                marginBottom: 10,
-                border: "1px dashed #ddd",
-                borderRadius: 4,
-              }}
-            >
-              No media uploaded for this seed
-            </div>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6" component="h3" sx={{ color: '#6a4026', fontWeight: 600 }}>
+                Attachments
+              </Typography>
+              {isEditingInView && (
+                <Button
+                  variant="outlined"
+                  startIcon={<CloudUploadIcon />}
+                  onClick={() => setShowUpload(!showUpload)}
+                  size="small"
+                  sx={{ 
+                    borderColor: '#6a951f', 
+                    color: '#6a951f',
+                    '&:hover': { borderColor: '#5a8010', backgroundColor: '#f0f7e8' }
+                  }}
+                >
+                  {showUpload ? 'Cancel' : 'Add Files'}
+                </Button>
+              )}
+            </Box>
+
+            {isEditingInView && showUpload && (
+              <Box sx={{ mb: 2, p: 2, border: '1px solid #e0e0e0', borderRadius: 1, backgroundColor: '#fafafa' }}>
+                <FileUpload onFilesSelected={setSelectedFiles} />
+                {selectedFiles.length > 0 && (
+                  <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+                    <Button
+                      variant="contained"
+                      onClick={handleFileUpload}
+                      disabled={uploading}
+                      size="small"
+                      sx={{ 
+                        backgroundColor: '#6a951f',
+                        '&:hover': { backgroundColor: '#5a8010' }
+                      }}
+                    >
+                      {uploading ? 'Uploading...' : 'Upload'}
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      onClick={() => {
+                        setSelectedFiles([]);
+                        setShowUpload(false);
+                      }}
+                      size="small"
+                    >
+                      Cancel
+                    </Button>
+                  </Box>
+                )}
+              </Box>
+            )}
+
+            <AttachmentList
+              attachments={localAttachments}
+              onDelete={isEditingInView ? handleDeleteFile : null}
+              canDelete={isEditingInView}
+            />
           </div>
 
           {/* Comments */}
@@ -307,7 +444,10 @@ export default function SeedView({
                   {isEditingInView && (
                     <button
                       onClick={() =>
-                        onDeleteComment(viewingIdea.id, comment._id)
+                        onDeleteComment(
+                          viewingIdea._id || viewingIdea.id,
+                          comment._id
+                        )
                       }
                       style={{
                         backgroundColor: "#ff4444",
@@ -346,7 +486,7 @@ export default function SeedView({
                 style={{ ...inputStyle, flex: 1 }}
               />
               <button
-                onClick={() => onAddComment(viewingIdea.id)}
+                onClick={() => onAddComment(viewingIdea._id || viewingIdea.id)}
                 style={{
                   padding: "8px 14px",
                   backgroundColor: "#1976d2",

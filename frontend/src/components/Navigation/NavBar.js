@@ -14,7 +14,6 @@ function TopBar() {
       try {
         const me = await authService.getMe(token);
         setCurrentUser(me);
-        const isAdmin = (currentUser?.roles || []).includes('admin');
       } catch (err) {
         console.error("Failed to fetch current user", err);
       }
@@ -47,7 +46,7 @@ function TopBar() {
               </Link>
             </td>
             <td>
-              <Link to="/settings" className="nav-button">
+              <Link to="[PLACEHOLDER]" className="nav-button">
                 <img alt="icon" src="/dashboard_images/Settings.png" className="img" />
                 <span>Settings</span>
               </Link>
