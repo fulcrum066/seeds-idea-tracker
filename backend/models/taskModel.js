@@ -4,6 +4,7 @@ const { Schema } = mongoose;
 const taskSchema = new Schema({
   taskName: { type: String, required: true },
   subTaskCategory: { type: String },
+  startDate : {type: String},
   dueDate: { type: String },
   timeDue: { type: String },
   seedId: { type: Schema.Types.ObjectId, ref: "Seed", required: true },

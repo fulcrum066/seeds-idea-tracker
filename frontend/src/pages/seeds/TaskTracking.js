@@ -17,9 +17,11 @@ function TimeTracking() {
   const [selectedSeed, setSelectedSeed] = useState(null);
   const [openTaskDialog, setOpenTaskDialog] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
+  const [showGanttChart, setShowGanttChart] = useState(false);
   const [taskFormData, setTaskFormData] = useState({
     taskName: '',
     subTaskCategory: '',
+    startDate: '',
     dueDate: '',
     timeDue: ''
   });
@@ -82,12 +84,40 @@ function TimeTracking() {
     return `${displayHour}:${minutes} ${ampm}`;
   };
 
+  // Calculate Gantt chart dimensions
+  const calculateGanttData = () => {
+    if (!allTasks || allTasks.length === 0) return null;
+
+    // Filter tasks that have both start and due dates
+    const tasksWithDates = allTasks.filter(task => task.startDate && task.dueDate);
+    if (tasksWithDates.length === 0) return null;
+
+    // Sort tasks by start date (earliest first)
+    tasksWithDates.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+    // Find earliest start date and latest due date
+    const dates = tasksWithDates.flatMap(task => [
+      new Date(task.startDate),
+      new Date(task.dueDate)
+    ]);
+    const minDate = new Date(Math.min(...dates));
+    const maxDate = new Date(Math.max(...dates));
+
+    // Calculate total days in range
+    const totalDays = Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24)) + 1;
+
+    return { tasksWithDates, minDate, maxDate, totalDays };
+  };
+
+  const ganttData = calculateGanttData();
+
   const handleOpenTaskDialog = (task = null) => {
     if (task) {
       setEditingTask(task);
       setTaskFormData({
         taskName: task.taskName,
         subTaskCategory: task.subTaskCategory,
+        startDate: task.startDate,
         dueDate: task.dueDate,
         timeDue: task.timeDue
       });
@@ -96,6 +126,7 @@ function TimeTracking() {
       setTaskFormData({
         taskName: '',
         subTaskCategory: '',
+        startDate: '',
         dueDate: '',
         timeDue: ''
       });
@@ -109,6 +140,7 @@ function TimeTracking() {
     setTaskFormData({
       taskName: '',
       subTaskCategory: '',
+      startDate: '',
       dueDate: '',
       timeDue: ''
     });
@@ -118,6 +150,17 @@ function TimeTracking() {
     if (!taskFormData.taskName.trim()) {
       alert('Please enter a task name');
       return;
+    }
+
+    // Validate dates
+    if (taskFormData.startDate && taskFormData.dueDate) {
+      const startDate = new Date(taskFormData.startDate);
+      const dueDate = new Date(taskFormData.dueDate);
+      
+      if (startDate > dueDate) {
+        alert('Start date must be before or equal to due date');
+        return;
+      }
     }
 
     if (editingTask) {
@@ -191,7 +234,7 @@ function TimeTracking() {
             cursor: 'pointer'
           }}
         >
-          Back to Dashboard
+          Back to Project Boards
         </button>
 
         <h3 style={{
@@ -271,14 +314,19 @@ function TimeTracking() {
         flex: 1,
         padding: '40px',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        overflow: 'hidden'
       }}>
         <div style={{
           backgroundColor: 'white',
           borderRadius: '12px',
           padding: '30px',
           boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-          minHeight: '600px'
+          minHeight: '600px',
+          maxHeight: '80vh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden'
         }}>
           <div style={{
             display: 'flex',
@@ -298,21 +346,39 @@ function TimeTracking() {
             </h1>
 
             {selectedSeed && (
-              <button
-                onClick={() => handleOpenTaskDialog()}
-                style={{
-                  backgroundColor: '#91b472',
-                  color: 'white',
-                  padding: '10px 20px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  fontSize: '14px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer'
-                }}
-              >
-                Add Task
-              </button>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  onClick={() => setShowGanttChart(!showGanttChart)}
+                  style={{
+                    backgroundColor: '#6a4026',
+                    color: 'white',
+                    padding: '10px 20px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {showGanttChart ? 'Hide Gantt Chart' : 'Show Gantt Chart'}
+                </button>
+
+                <button
+                  onClick={() => handleOpenTaskDialog()}
+                  style={{
+                    backgroundColor: '#91b472',
+                    color: 'white',
+                    padding: '10px 20px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Add Task
+                </button>
+              </div>
             )}
           </div>
 
@@ -327,6 +393,223 @@ function TimeTracking() {
             }}>
               Please select a board and seed to view tasks
             </div>
+          ) : showGanttChart ? (
+            // Gantt Chart View
+            ganttData && ganttData.tasksWithDates.length > 0 ? (
+              <div style={{
+                backgroundColor: '#f8f9fa',
+                padding: '20px',
+                borderRadius: '8px',
+                border: '1px solid #dee2e6',
+                display: 'flex',
+                flexDirection: 'column',
+                flex: 1,
+                overflow: 'hidden'
+              }}>
+                <h2 style={{
+                  fontSize: '20px',
+                  fontWeight: 'bold',
+                  color: '#6a4026',
+                  marginBottom: '20px',
+                  flexShrink: 0
+                }}>
+                  Gantt Chart - {selectedSeed.title || selectedSeed.description?.substring(0, 30)}
+                </h2>
+
+                {/* Scrollable Gantt Container */}
+                <div style={{
+                  overflowX: 'scroll',
+                  overflowY: 'auto',
+                  flex: 1,
+                  border: '1px solid #dee2e6',
+                  borderRadius: '4px',
+                  backgroundColor: 'white',
+                  maxWidth: '100%'
+                }}>
+                  <div style={{
+                    minWidth: `${ganttData.totalDays * 80}px`,
+                    padding: '10px'
+                  }}>
+
+                  {/* Timeline header */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '200px 1fr',
+                    gap: '10px',
+                    marginBottom: '10px'
+                  }}>
+                    <div style={{
+                      fontWeight: 'bold',
+                      fontSize: '14px',
+                      color: '#495057',
+                      padding: '10px',
+                      backgroundColor: '#e9ecef',
+                      borderRadius: '4px'
+                    }}>
+                      Task Name
+                    </div>
+                    <div style={{
+                      backgroundColor: '#e9ecef',
+                      borderRadius: '4px',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        fontWeight: 'bold',
+                        fontSize: '14px',
+                        color: '#495057',
+                        padding: '10px',
+                        textAlign: 'center',
+                        borderBottom: '2px solid #dee2e6'
+                      }}>
+                        Timeline ({new Date(ganttData.minDate).toLocaleDateString()} - {new Date(ganttData.maxDate).toLocaleDateString()})
+                      </div>
+                      {/* Day labels */}
+                      <div style={{
+                        display: 'flex',
+                        backgroundColor: '#f8f9fa'
+                      }}>
+                        {Array.from({ length: ganttData.totalDays }, (_, i) => {
+                          const currentDate = new Date(ganttData.minDate);
+                          currentDate.setDate(currentDate.getDate() + i);
+                          return (
+                            <div
+                              key={i}
+                              style={{
+                                flex: 1,
+                                padding: '8px 4px',
+                                fontSize: '10px',
+                                color: '#6c757d',
+                                textAlign: 'center',
+                                borderRight: i < ganttData.totalDays - 1 ? '1px solid #dee2e6' : 'none',
+                                minWidth: '40px'
+                              }}
+                            >
+                              <div style={{ fontWeight: 'bold' }}>
+                                {currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              </div>
+                              <div style={{ fontSize: '9px', marginTop: '2px' }}>
+                                {currentDate.toLocaleDateString('en-US', { weekday: 'short' })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Task rows */}
+                  {ganttData.tasksWithDates.map((task) => {
+                    const taskStart = new Date(task.startDate);
+                    const taskEnd = new Date(task.dueDate);
+                    const daysFromStart = Math.ceil((taskStart - ganttData.minDate) / (1000 * 60 * 60 * 24));
+                    const taskDuration = Math.ceil((taskEnd - taskStart) / (1000 * 60 * 60 * 24)) + 1;
+                    
+                    const leftPercent = (daysFromStart / ganttData.totalDays) * 100;
+                    const widthPercent = (taskDuration / ganttData.totalDays) * 100;
+
+                    return (
+                      <div key={task._id} style={{
+                        display: 'grid',
+                        gridTemplateColumns: '200px 1fr',
+                        gap: '10px',
+                        marginBottom: '8px',
+                        alignItems: 'center'
+                      }}>
+                        <div style={{
+                          fontSize: '13px',
+                          color: '#495057',
+                          padding: '8px',
+                          backgroundColor: 'white',
+                          borderRadius: '4px',
+                          border: '1px solid #dee2e6',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {task.taskName}
+                        </div>
+
+                        <div style={{
+                          position: 'relative',
+                          height: '40px',
+                          backgroundColor: 'white',
+                          borderRadius: '4px',
+                          border: '1px solid #dee2e6',
+                          display: 'flex'
+                        }}>
+                          {/* Day dividers */}
+                          {Array.from({ length: ganttData.totalDays - 1 }, (_, i) => (
+                            <div
+                              key={i}
+                              style={{
+                                position: 'absolute',
+                                left: `${((i + 1) / ganttData.totalDays) * 100}%`,
+                                height: '100%',
+                                width: '1px',
+                                backgroundColor: '#dee2e6',
+                                zIndex: 1
+                              }}
+                            />
+                          ))}
+
+                          {/* Task bar */}
+                          <div style={{
+                            position: 'absolute',
+                            left: `${leftPercent}%`,
+                            width: `${widthPercent}%`,
+                            height: '100%',
+                            backgroundColor: '#6a951f',
+                            borderRadius: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            fontSize: '11px',
+                            fontWeight: 'bold',
+                            padding: '0 5px',
+                            boxSizing: 'border-box',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            zIndex: 2
+                          }}>
+                            {/* Day dividers within task bar */}
+                            {Array.from({ length: taskDuration - 1 }, (_, i) => (
+                              <div
+                                key={i}
+                                style={{
+                                  position: 'absolute',
+                                  left: `${((i + 1) / taskDuration) * 100}%`,
+                                  height: '100%',
+                                  width: '1px',
+                                  backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                                  zIndex: 1
+                                }}
+                              />
+                            ))}
+                            <span style={{ zIndex: 2, position: 'relative' }}>
+                              {taskDuration} day{taskDuration !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                minHeight: '400px',
+                color: '#6c757d',
+                fontSize: '18px'
+              }}>
+                No tasks with start and due dates. Add dates to tasks to see the Gantt chart.
+              </div>
+            )
           ) : allTasks.length === 0 ? (
             <div style={{
               display: 'flex',
@@ -342,7 +625,10 @@ function TimeTracking() {
             <div style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: '16px'
+              gap: '16px',
+              overflowY: 'auto',
+              flex: 1,
+              paddingRight: '10px'
             }}>
               {allTasks.map((task) => (
                 <div
@@ -394,6 +680,23 @@ function TimeTracking() {
                           marginTop: '4px'
                         }}>
                           {task.subTaskCategory || 'N/A'}
+                        </div>
+                      </div>
+
+                      <div>
+                        <span style={{
+                          fontSize: '12px',
+                          color: '#6c757d',
+                          fontWeight: '600'
+                        }}>
+                          Start Date:
+                        </span>
+                        <div style={{
+                          fontSize: '14px',
+                          color: '#495057',
+                          marginTop: '4px'
+                        }}>
+                          {task.startDate || 'N/A'}
                         </div>
                       </div>
 
@@ -561,12 +864,38 @@ function TimeTracking() {
                 marginBottom: '8px',
                 color: '#495057'
               }}>
+                Start Date
+              </label>
+              <input
+                type="date"
+                value={taskFormData.startDate}
+                onChange={(e) => setTaskFormData({ ...taskFormData, startDate: e.target.value })}
+                max="9999-12-31"
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  borderRadius: '4px',
+                  border: '1px solid #ced4da',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: '600',
+                marginBottom: '8px',
+                color: '#495057'
+              }}>
                 Due Date
               </label>
               <input
                 type="date"
                 value={taskFormData.dueDate}
                 onChange={(e) => setTaskFormData({ ...taskFormData, dueDate: e.target.value })}
+                max="9999-12-31"
                 style={{
                   width: '100%',
                   padding: '8px 12px',
