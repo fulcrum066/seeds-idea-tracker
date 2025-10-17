@@ -14,6 +14,7 @@ function TopBar() {
       try {
         const me = await authService.getMe(token);
         setCurrentUser(me);
+        const isAdmin = (currentUser?.roles || []).includes('admin');
       } catch (err) {
         console.error("Failed to fetch current user", err);
       }
