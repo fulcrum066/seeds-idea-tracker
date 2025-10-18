@@ -5,6 +5,8 @@ const Seed = require("../models/seedModel");
 const Board = require("../models/boardModel");
 const { calculateMetricScore } = require("../metric/metric");
 
+const { createSubject } = require("../factory/observerFactory")
+
 // ----------------------------------------------------------------------------------
 // --------------------------------------HELPERS-------------------------------------
 // ----------------------------------------------------------------------------------
@@ -75,6 +77,7 @@ const createSeed = asyncHandler(async (req, res) => {
     priority,
     status,
     isFavorite,
+    cleanDescription,
   } = req.body;
 
   if (!description || !creatorName) {
@@ -119,7 +122,10 @@ const createSeed = asyncHandler(async (req, res) => {
     );
   }
 
+  
   res.status(201).json(savedSeed);
+
+  createSubject.notifyObservers(true, title, creatorEmail, cleanDescription, board.projectName, String(Math.round(metricScore)), savedSeed._id);
 });
 
 // ----------------------------------------------------------------------------------

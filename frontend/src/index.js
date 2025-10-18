@@ -16,6 +16,10 @@ import App from "./App";
 // Import basic CSS
 import "./index.css";
 
+// Import and Register Service Workers
+import * as serviceWorkerRegistration from './serviceWorkerRegistration';
+serviceWorkerRegistration.register();
+
 // Create a root and render the app
 const container = document.getElementById("root");
 const root = createRoot(container);

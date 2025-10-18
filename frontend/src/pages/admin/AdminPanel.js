@@ -593,7 +593,7 @@ const AdminPanel = () => {
                     <b>{seed.status || "unknown"}</b>
                   </td>
                   <td style={styles.td}>
-                    <button onClick={() => handleViewIdea(seed)} style={styles.viewButton}>View</button>
+                    <button onClick={() => handleViewIdea()} style={styles.viewButton}>View</button>
                   </td>
                   <td style={styles.td}>
                     <button onClick={() => handleSeedUpdate(seed, "approved")} style={styles.iconButton("#86E63C")}><FaCheck /></button>

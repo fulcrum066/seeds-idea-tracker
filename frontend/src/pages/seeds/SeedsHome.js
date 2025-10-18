@@ -903,6 +903,7 @@ function SeedsDashboard() {
                     description:
                       cleanDescription +
                       (ideaFormData.metric3 ? `||METRIC3:${ideaFormData.metric3}` : ""),
+                    cleanDescription: cleanDescription,
                   };
 
                   if (editingIdea) {
