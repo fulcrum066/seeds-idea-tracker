@@ -13,7 +13,7 @@ router.get("/checkStatus", (req, res, next) => {
       }
     }
 
-    return res.json([false, '', '', '', '', '', ''])
+    return res.json([false, '', '', '', '', '', '', ''])
   } catch (err) {
     next(err); // send error to centralized error handler
   }
@@ -21,7 +21,7 @@ router.get("/checkStatus", (req, res, next) => {
 
 router.post("/reset", (req, res) => {
   try {
-    createSubject.notifyObservers(false, '', '', '', '', '', '');
+    createSubject.notifyObservers(false, '', '', '', '', '', '', '');
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

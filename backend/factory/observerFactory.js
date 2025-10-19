@@ -7,9 +7,10 @@ class observer{
         this.boardName = ''
         this.metricScore = ''
         this.seedID = null
+        this.priority = ''
 
     }
-    update(status, seedTitle, creatorName, description, boardName, metricScore, seedID){
+    update(status, seedTitle, creatorName, description, boardName, metricScore, seedID, priority){
         this.status = status
         this.seedTitle = seedTitle
         this.creatorName = creatorName
@@ -17,6 +18,7 @@ class observer{
         this.boardName = boardName
         this.metricScore = metricScore
         this.seedID = seedID
+        this.priority = priority
     }
 
     getStatus(){
@@ -24,7 +26,7 @@ class observer{
     }
 
     getInfo(){
-        return [this.status, this.seedTitle, this.creatorName, this.description, this.boardName, this.metricScore, this.seedID]
+        return [this.status, this.seedTitle, this.creatorName, this.description, this.boardName, this.metricScore, this.seedID, this.priority]
     }
 }
 
@@ -43,9 +45,9 @@ class subject {
         this.observers.splice(index, 1)
     }
 
-    notifyObservers(new_status, seedTitle, creatorName, description, boardName, metricScore, seedID){
+    notifyObservers(new_status, seedTitle, creatorName, description, boardName, metricScore, seedID, priority){
         for (let i = 0; i < this.observers.length; i++){
-            this.observers[i].update(new_status, seedTitle, creatorName, description, boardName, metricScore, seedID)
+            this.observers[i].update(new_status, seedTitle, creatorName, description, boardName, metricScore, seedID, priority)
         }
         
     }
@@ -61,7 +63,6 @@ class subject {
     getObserverInfo(index){
         return this.observers[index].getInfo()
     }
-
 
 }
 

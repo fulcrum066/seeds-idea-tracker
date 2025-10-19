@@ -125,7 +125,7 @@ const createSeed = asyncHandler(async (req, res) => {
   
   res.status(201).json(savedSeed);
 
-  createSubject.notifyObservers(true, title, creatorEmail, cleanDescription, board.projectName, String(Math.round(metricScore)), savedSeed._id);
+  createSubject.notifyObservers(true, title, creatorEmail, cleanDescription, board.projectName, String(Math.round(metricScore)), savedSeed._id, priority);
 });
 
 // ----------------------------------------------------------------------------------
