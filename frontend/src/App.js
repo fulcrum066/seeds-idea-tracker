@@ -181,6 +181,10 @@ const newSeedNotification = (data) => {
                 { action: "approve", title: "Approve" },
                 { action: "reject", title: "Reject" },
               ],
+              data: {
+                id: data[6], 
+                token: token,
+              },
             });
           }
         });
@@ -296,12 +300,12 @@ const newSeedNotification = (data) => {
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "5px", marginTop: "10px" }}>
             <Link to="/admin">
-              <button style={styles.iconButton("#b9b9b9ff")}>View</button>
+              <button onClick={() => handleDismiss()} style={styles.iconButton("#b9b9b9ff")}>View</button>
             </Link>
-            <button onClick={() => handleSeedUpdate(seedID, "approved")} style={styles.iconButton("#86E63C")}>
+            <button onClick={async () => { handleSeedUpdate(seedID, "approved"); handleDismiss();}} style={styles.iconButton("#86E63C")}>
               <FaCheck />
             </button>
-            <button onClick={() => handleSeedUpdate(seedID, "rejected")} style={styles.iconButton("#D34D4D")}>
+            <button onClick={async () => { handleSeedUpdate(seedID, "rejected"); handleDismiss();}} style={styles.iconButton("#D34D4D")}>
               <FaTimes />
             </button>
           </div>

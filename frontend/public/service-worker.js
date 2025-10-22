@@ -8,15 +8,44 @@ self.addEventListener('activate', event => {
   return self.clients.claim();
 });
 
-self.addEventListener('notificationclick', event => {
-  const action = event.action;
-  console.log('Notification click received:', action);
+self.addEventListener("notificationclick", function (event) {
+  event.notification.close(); // close the notification popup
 
-  if (action === 'open_app') {
+  // Identify which button was clicked
+  if (event.action === "view") {
+    // Open or focus the app and navigate to the idea page
+      clients.openWindow(`/admin`)
+      
+  } else if (event.action === "approve") {
     event.waitUntil(
-      clients.openWindow('http://localhost:3000') // change this if needed
+      fetch(`/api/seeds/seed/${event.notification.data.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${event.notification.data.token || ""}`,
+        },
+        body: JSON.stringify({ status: "approved" }),
+      })
+
+      .then((res) => res.json())
+      .then((data) => console.log("Sucessfully change seed status:", data))
+      .catch((err) => console.error("Failed to change seed status:", err))
     );
+
   } else {
-    event.notification.close();
-  }
+    event.waitUntil(
+      fetch(`/api/seeds/seed/${event.notification.data.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${event.notification.data.token || ""}`,
+        },
+        body: JSON.stringify({ status: "rejected" }),
+      })
+
+      .then((res) => res.json())
+      .then((data) => console.log("Sucessfully change seed status:", data))
+      .catch((err) => console.error("Failed to change seed status:", err))
+    );
+  };
 });
