@@ -91,12 +91,40 @@ export default function Register(props) {
   //----------------------------MAIN----------------------------
 
   return (
-    <div className="container">
-      <Header />
+    <div
+      style={{
+        backgroundImage: 'url("dashboard_images/Background.png")',
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+     
+    
+        <Header />
+     
 
-      <section>
+     
+      <section
+        style={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         <Container maxWidth="xs">
-          <Box pt={3} pb={10}>
+          <Box
+            sx={{
+              backgroundColor: "white",
+              p: 4,
+              borderRadius: 2,
+              boxShadow: 3,
+            }}
+          >
             <Box mb={3} textAlign="center">
               <section className="heading">
                 <div className="center">
@@ -104,7 +132,9 @@ export default function Register(props) {
                     <FaUser />
                   </h1>
                 </div>
-                Register
+                <h2 style={{ fontSize: "1rem", marginTop: "8px" }}>
+                  {content.header}
+                </h2>
               </section>
             </Box>
 
@@ -119,7 +149,7 @@ export default function Register(props) {
                     alignItems: "stretch",
                   }}
                 >
-                  <Grid size={6}>
+                  <Grid item xs={6}>
                     <TextField
                       variant="outlined"
                       required
@@ -134,7 +164,7 @@ export default function Register(props) {
                     />
                   </Grid>
 
-                  <Grid size={6}>
+                  <Grid item xs={6}>
                     <TextField
                       variant="outlined"
                       required
@@ -149,7 +179,7 @@ export default function Register(props) {
                     />
                   </Grid>
 
-                  <Grid size={12}>
+                  <Grid item xs={12}>
                     <TextField
                       variant="outlined"
                       required
@@ -164,7 +194,7 @@ export default function Register(props) {
                     />
                   </Grid>
 
-                  <Grid size={12}>
+                  <Grid item xs={12}>
                     <TextField
                       variant="outlined"
                       required
@@ -180,7 +210,7 @@ export default function Register(props) {
                     />
                   </Grid>
 
-                  <Grid size={12}>
+                  <Grid item xs={12}>
                     <TextField
                       variant="outlined"
                       required
@@ -220,3 +250,4 @@ export default function Register(props) {
     </div>
   );
 }
+

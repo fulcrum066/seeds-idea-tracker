@@ -43,12 +43,11 @@ export default function Login(props) {
   const location = useLocation();
   const from = location.state?.from?.pathname || "/";
   const dispatch = useDispatch();
-
   const classes = useStyles();
 
   const content = {
     brand: { image: "images/logo.png", width: 200 },
-    "02_header": "Login to view the Dashboard",
+    "02_header": "Plant a seed and grow your team's idea today!",
     "02_primary-action": "Sign in",
     "02_secondary-action": "Don't have an account?",
     "02_tertiary-action": "Forgot password?",
@@ -115,104 +114,120 @@ export default function Login(props) {
   //----------------------------MAIN----------------------------
 
   return (
-    <div className="relative h-screen">
-      <Header />
+  <div
+    style={{
+      backgroundImage: 'url("dashboard_images/Background.png")',
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundRepeat: "no-repeat",
+      minHeight: "100vh",      
+      display: "flex",
+      flexDirection: "column",
+    }}
+  >
+    <Header />
 
-      <section>
-        <Container maxWidth="xs">
-          <Box pt={3} pb={10}>
-            <Box mb={3} textAlign="center">
-              <section className="heading">
-                <h1>
-                  <center>
-                    <FaSignInAlt />
-                    Login
-                  </center>
-                </h1>
-              </section>
-              <Typography variant="h5" component="h2">
-                {content["02_header"]}
-              </Typography>
-            </Box>
-
-            <Box>
-              <form onSubmit={onSubmit}>
-                <Grid
-                  container
-                  spacing={3}
-                  direction="column"
-                  sx={{
-                    justifyContent: "flex-start",
-                    alignItems: "stretch",
-                  }}
-                >
-                  <Grid size={12}>
-                    <TextField
-                      variant="outlined"
-                      className="loginemail"
-                      required
-                      fullWidth
-                      name="email"
-                      id="email"
-                      value={email}
-                      onChange={onChange}
-                      label="Email address"
-                      autoComplete="email"
-                      style={{ backgroundColor: "white" }}
-                    />
-                  </Grid>
-
-                  <Grid size={12}>
-                    <TextField
-                      variant="outlined"
-                      className="loginpassword"
-                      required
-                      fullWidth
-                      name="password"
-                      id="password"
-                      label="Password"
-                      type="password"
-                      value={password}
-                      onChange={onChange}
-                      autoComplete="current-password"
-                      style={{ backgroundColor: "white" }}
-                    />
-                  </Grid>
-                </Grid>
-
-                <Box my={2}>
-                  <Button
-                    type="submit"
-                    fullWidth
-                    variant="contained"
-                    color="primary"
-                    className="loginButton"
-                  >
-                    {content["02_primary-action"]}
-                  </Button>
-                </Box>
-
-                <Grid container spacing={2} className={classes.actions}>
-                  <Grid item xs={12} sm={6} className={classes.tertiaryAction}>
-                    <Link to="/register" variant="body2">
-                      {content["02_secondary-action"]}
-                    </Link>
-                  </Grid>
-                </Grid>
-              </form>
-            </Box>
-          </Box>
-        </Container>
-      </section>
-
-      <div className="absolute bottom-10 container">
-        <button
-          onClick={clearCookies}
-          className="bg-blue-500 text-white px-4 py-2 rounded"
+    <section style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <Container maxWidth="xs">
+       
+        <Box
+          sx={{
+            backgroundColor: "white",
+            p: 4,
+            borderRadius: 2,
+            boxShadow: 3,
+          }}
         >
-          Clear All Cookies
-        </button>
-      </div>
-    </div>
-  );
+          <Box mb={3} textAlign="center">
+            <section className="heading">
+              <h1>
+                <center>
+                  <FaSignInAlt />
+                  Login
+                </center>
+              </h1>
+            </section>
+            <Typography
+            variant="h5"
+            component="h2"
+            sx={{ fontSize: "1rem" }} 
+          >
+            {content["02_header"]}
+          </Typography>
+
+          </Box>
+
+          <Box>
+            <form onSubmit={onSubmit}>
+              <Grid
+                container
+                spacing={3}
+                direction="column"
+                sx={{
+                  justifyContent: "flex-start",
+                  alignItems: "stretch",
+                }}
+              >
+                <Grid item xs={12}>
+                  <TextField
+                    variant="outlined"
+                    className="loginemail"
+                    required
+                    fullWidth
+                    name="email"
+                    id="email"
+                    value={email}
+                    onChange={onChange}
+                    label="Email address"
+                    autoComplete="email"
+                    style={{ backgroundColor: "white" }}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <TextField
+                    variant="outlined"
+                    className="loginpassword"
+                    required
+                    fullWidth
+                    name="password"
+                    id="password"
+                    label="Password"
+                    type="password"
+                    value={password}
+                    onChange={onChange}
+                    autoComplete="current-password"
+                    style={{ backgroundColor: "white" }}
+                  />
+                </Grid>
+              </Grid>
+
+              <Box my={2}>
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  color="primary"
+                  className="loginButton"
+                >
+                  {content["02_primary-action"]}
+                </Button>
+              </Box>
+
+              <Grid container spacing={2} className={classes.actions}>
+                <Grid item xs={12} sm={6} className={classes.tertiaryAction}>
+                  <Link to="/register" variant="body2">
+                    {content["02_secondary-action"]}
+                  </Link>
+                </Grid>
+              </Grid>
+            </form>
+          </Box>
+        </Box>
+      </Container>
+    </section>
+  </div>
+);
+
+
 }
