@@ -119,8 +119,8 @@ function SeedsDashboard() {
   const filteredIdeas = useMemo(() => {
     if (activeBoard?.seeds && Array.isArray(activeBoard.seeds)) {
 
-      const activeSeeds = activeBoard.seeds.filter(seed => seed.status !== "pending" );
-      
+      const activeSeeds = activeBoard.seeds.filter(seed => seed.status == "approved");
+
       if (activeSeeds.length === 0) {
         return [
           { id: 0, title: "No Ideas Yet", content: "Click the CREATE IDEA button to add your first idea!" }

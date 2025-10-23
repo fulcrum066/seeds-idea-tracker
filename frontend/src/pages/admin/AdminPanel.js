@@ -57,7 +57,7 @@ const styles = {
   },
   table: { width: "100%", padding: "40px 20px", backgroundColor: "white", border: "2px solid black", borderCollapse: "collapse" },
   th: { border: "1px", padding: "10px", backgroundColor: "#f0f0f0", textAlign: "left" },
-  td: { padding: "12px 16px", verticalAlign: "top" },
+  td: { padding: "12px 16px", verticalAlign: "middle" },
   viewButton: { padding: "10px 40px", border: "0px", borderRadius: "50px", backgroundColor: "rgba(123, 186, 13, 0.2)", cursor: "pointer", fontSize: "14px", margin: "4px" },
   input: { padding: "12px 16px", borderRadius: "8px", border: "2px solid #523629", fontSize: "14px", flex: 1, marginRight: "10px" },
   addButton: { padding: "12px 20px", backgroundColor: "#5bc84a", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", marginRight: "10px" },
@@ -252,6 +252,10 @@ const AdminPanel = () => {
     try {
       const updated = await updateSeed(seed._id, { status: newStatus }, token);
       console.log("Seed updated:", updated);
+
+      if (newStatus == "rejected"){
+        axios.delete(`/api/seeds/seed/${seed._id}`, {headers: { Authorization: `Bearer ${token}` }})
+      }
       // Update boards state so UI reflects the change
       setBoards(prevBoards =>
         prevBoards.map(board =>
@@ -343,7 +347,7 @@ const AdminPanel = () => {
     setIsEditingInView(false);
     setNewComment('');
     setOpenViewPopup(true);
-  }; 
+  };
 
   //---- Diaglog Box ---- 
   const { allSeeds, isLoading } = useSelector((state) => state.seeds);
@@ -593,7 +597,7 @@ const AdminPanel = () => {
                     <b>{seed.status || "unknown"}</b>
                   </td>
                   <td style={styles.td}>
-                    <button onClick={() => handleViewIdea()} style={styles.viewButton}>View</button>
+                    <button onClick={() => handleViewIdea(seed)} style={styles.viewButton}>View</button>
                   </td>
                   <td style={styles.td}>
                     <button onClick={() => handleSeedUpdate(seed, "approved")} style={styles.iconButton("#86E63C")}><FaCheck /></button>
@@ -716,7 +720,7 @@ const AdminPanel = () => {
           <table style={styles.table}>
             <tbody>
               <tr>
-                <td style={{ ...styles.td, width: "20%" }}>
+                <td style={{ padding: "12px 16px", width: "20%", verticalAlign: "top"}}>
                   <button style={styles.sectionButton(activeSection === "ideas")} onClick={() => setActiveSection("ideas")}>
                     Manage Ideas
                   </button>

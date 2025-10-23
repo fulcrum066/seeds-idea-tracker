@@ -35,17 +35,17 @@ self.addEventListener("notificationclick", function (event) {
   } else {
     event.waitUntil(
       fetch(`/api/seeds/seed/${event.notification.data.id}`, {
-        method: "PUT",
+        method: "DELETE",
         headers: {
-          "Content-Type": "application/json",
           "Authorization": `Bearer ${event.notification.data.token || ""}`,
         },
-        body: JSON.stringify({ status: "rejected" }),
       })
 
-      .then((res) => res.json())
-      .then((data) => console.log("Sucessfully change seed status:", data))
-      .catch((err) => console.error("Failed to change seed status:", err))
+      .then((res) => {
+        if (!res.ok) throw new Error(`Delete failed with status ${res.status}`);
+        console.log(`Successfully deleted rejected seed ${event.notification.data.id}`);
+      })
+      .catch((err) => console.error("Failed to delete seed:", err))
     );
   };
 });

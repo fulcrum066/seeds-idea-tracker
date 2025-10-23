@@ -40,6 +40,8 @@ const styles = {
   
 }
 
+// ------- Deleting a Rejected Seed -------
+
 function App() {
     // State for dialog box
   const [openNotification, setOpenNotification] = useState(false);
@@ -66,7 +68,7 @@ function App() {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const token = user?.token;
-
+  
   // ------- Updating a Seed Status ---------
   const updateSeed = async (seedID, updateData, token) => {
     try {
@@ -89,6 +91,9 @@ const handleSeedUpdate = async (seedID, newStatus) => {
   try {
     const updated = await updateSeed(seedID, { status: newStatus }, token);
     console.log("Seed updated:", updated);
+    if (newStatus == "rejected"){
+      axios.delete(`/api/seeds/seed/${seedID}`, {headers: { Authorization: `Bearer ${token}` }})
+    }
 
   } catch (error) {
     console.error("Failed to approve seed:", error);
@@ -179,7 +184,6 @@ const newSeedNotification = (data) => {
               actions: [
                 { action: "view", title: "View" },
                 { action: "approve", title: "Approve" },
-                { action: "reject", title: "Reject" },
               ],
               data: {
                 id: data[6], 
